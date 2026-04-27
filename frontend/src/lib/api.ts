@@ -40,8 +40,8 @@ async function request<T>(
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     const message =
-      body.detail ??
-      Object.values(body).flat().join(' ') ??
+      body.detail ||
+      Object.values(body).flat().join(' ') ||
       `Request failed (${res.status})`
     throw new ApiError(res.status, message as string)
   }

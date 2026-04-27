@@ -490,7 +490,10 @@ def receipt_scan(request):
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-1.5-flash')
 
-    image_data = {'mime_type': content_type, 'data': upload.read()}
+    file_bytes = upload.read()
+    part = genai.protos.Part(
+        inline_data=genai.protos.Blob(mime_type=content_type, data=file_bytes)
+    )
 
     prompt = (
         'Extract the total amount from this receipt. '
@@ -499,11 +502,14 @@ def receipt_scan(request):
         'If you cannot find a clear total, return {"amount": null, "description": null}.'
     )
 
-    response = model.generate_content([image_data, prompt])
-
     try:
+        response = model.generate_content([part, prompt])
         result = _json.loads(response.text)
-    except Exception:
+    except _json.JSONDecodeError:
         result = {'amount': None, 'description': None}
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("Gemini receipt scan error: %s", exc)
+        return Response({'detail': 'Could not scan receipt. Please enter the amount manually.'}, status=status.HTTP_502_BAD_GATEWAY)
 
     return Response(result)
