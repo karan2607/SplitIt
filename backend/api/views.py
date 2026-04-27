@@ -515,6 +515,10 @@ def receipt_scan(request):
         result = _json.loads(text)
     except _json.JSONDecodeError:
         result = {'amount': None, 'description': None}
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode()
+        logging.getLogger(__name__).error("Gemini API HTTP error %s: %s", exc.code, body)
+        return Response({'detail': f'Scan failed: {exc.code} {body}'}, status=status.HTTP_502_BAD_GATEWAY)
     except Exception as exc:
         logging.getLogger(__name__).error("Gemini receipt scan error: %s", exc, exc_info=True)
         return Response({'detail': f'Scan failed: {exc}'}, status=status.HTTP_502_BAD_GATEWAY)
