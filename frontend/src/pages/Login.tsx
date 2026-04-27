@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useAuth } from '../hooks/useAuth'
+import { setToken } from '../lib/auth'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -30,6 +31,20 @@ export default function Login() {
     setServerError(null)
     try {
       const res = await api.auth.login(data)
+      setToken(res.token)
+
+      if (next.startsWith('/invite/')) {
+        const inviteToken = next.replace('/invite/', '')
+        try {
+          const group = await api.invites.accept(inviteToken)
+          login(res.token, res.user)
+          navigate(`/groups/${group.id}`, { replace: true })
+          return
+        } catch {
+          // invite accept failed — fall through to normal redirect
+        }
+      }
+
       login(res.token, res.user)
       navigate(next, { replace: true })
     } catch (err) {

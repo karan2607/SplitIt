@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useAuth } from '../hooks/useAuth'
+import { setToken } from '../lib/auth'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -33,6 +34,23 @@ export default function Signup() {
     setServerError(null)
     try {
       const res = await api.auth.signup(data)
+      // Set token in localStorage first so subsequent API calls are authenticated
+      setToken(res.token)
+
+      // If coming from an invite link, accept it directly rather than redirecting
+      // back through the invite page (avoids a race with the route-level auth guard)
+      if (next.startsWith('/invite/')) {
+        const inviteToken = next.replace('/invite/', '')
+        try {
+          const group = await api.invites.accept(inviteToken)
+          login(res.token, res.user)
+          navigate(`/groups/${group.id}`, { replace: true })
+          return
+        } catch {
+          // invite accept failed (expired/used) — fall through to normal redirect
+        }
+      }
+
       login(res.token, res.user)
       navigate(next, { replace: true })
     } catch (err) {
