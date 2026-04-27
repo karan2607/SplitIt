@@ -471,8 +471,9 @@ def settle(request, group_pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def receipt_scan(request):
-    import os, json as _json
-    import google.generativeai as genai
+    import os, json as _json, logging
+    from google import genai
+    from google.genai import types
 
     upload = request.FILES.get('image')
     if not upload:
@@ -487,14 +488,8 @@ def receipt_scan(request):
     if not api_key:
         return Response({'detail': 'Receipt scanning is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-
+    client = genai.Client(api_key=api_key)
     file_bytes = upload.read()
-    part = genai.protos.Part(
-        inline_data=genai.protos.Blob(mime_type=content_type, data=file_bytes)
-    )
-
     prompt = (
         'Extract the total amount from this receipt. '
         'Reply with JSON only, no markdown: '
@@ -503,12 +498,17 @@ def receipt_scan(request):
     )
 
     try:
-        response = model.generate_content([part, prompt])
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=[
+                types.Part.from_bytes(data=file_bytes, mime_type=content_type),
+                types.Part.from_text(text=prompt),
+            ],
+        )
         result = _json.loads(response.text)
     except _json.JSONDecodeError:
         result = {'amount': None, 'description': None}
     except Exception as exc:
-        import logging
         logging.getLogger(__name__).error("Gemini receipt scan error: %s", exc)
         return Response({'detail': 'Could not scan receipt. Please enter the amount manually.'}, status=status.HTTP_502_BAD_GATEWAY)
 
