@@ -8,4 +8,4 @@ python-dotenv
 gunicorn
 whitenoise
 django-anymail[resend]
-anthropic
+google-generativeai

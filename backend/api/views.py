@@ -469,46 +469,34 @@ def settle(request, group_pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def receipt_scan(request):
-    import os, base64, json as _json
-    import anthropic
+    import os, json as _json
+    import google.generativeai as genai
 
     image_file = request.FILES.get('image')
     if not image_file:
         return Response({'detail': 'No image provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    api_key = os.getenv('ANTHROPIC_API_KEY', '')
+    api_key = os.getenv('GEMINI_API_KEY', '')
     if not api_key:
         return Response({'detail': 'Receipt scanning is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    content_type = image_file.content_type or 'image/jpeg'
-    b64_data = base64.standard_b64encode(image_file.read()).decode('utf-8')
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
-    client = anthropic.Anthropic(api_key=api_key)
-    message = client.messages.create(
-        model='claude-haiku-4-5-20251001',
-        max_tokens=256,
-        messages=[{
-            'role': 'user',
-            'content': [
-                {
-                    'type': 'image',
-                    'source': {'type': 'base64', 'media_type': content_type, 'data': b64_data},
-                },
-                {
-                    'type': 'text',
-                    'text': (
-                        'Extract the total amount from this receipt. '
-                        'Reply with JSON only, no markdown: '
-                        '{"amount": "XX.XX", "description": "brief merchant or category description"}. '
-                        'If you cannot find a clear total, return {"amount": null, "description": null}.'
-                    ),
-                },
-            ],
-        }],
+    content_type = image_file.content_type or 'image/jpeg'
+    image_data = {'mime_type': content_type, 'data': image_file.read()}
+
+    prompt = (
+        'Extract the total amount from this receipt. '
+        'Reply with JSON only, no markdown: '
+        '{"amount": "XX.XX", "description": "brief merchant or category description"}. '
+        'If you cannot find a clear total, return {"amount": null, "description": null}.'
     )
 
+    response = model.generate_content([image_data, prompt])
+
     try:
-        result = _json.loads(message.content[0].text)
+        result = _json.loads(response.text)
     except Exception:
         result = {'amount': None, 'description': None}
 
