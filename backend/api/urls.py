@@ -13,6 +13,7 @@ urlpatterns = [
     path('groups/<uuid:pk>/', views.group_detail, name='group-detail'),
     # Invites
     path('groups/<uuid:group_pk>/invite/', views.invite_create, name='invite-create'),
+    path('groups/<uuid:group_pk>/invite-link/', views.invite_link_create, name='invite-link-create'),
     path('invite/<str:token>/', views.invite_detail, name='invite-detail'),
     path('invite/<str:token>/accept/', views.invite_accept, name='invite-accept'),
     # Expenses

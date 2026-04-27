@@ -70,7 +70,7 @@ class GroupMember(models.Model):
 class GroupInvite(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='invites')
-    invited_email = models.EmailField()
+    invited_email = models.CharField(max_length=254, blank=True)
     token = models.CharField(max_length=64, unique=True)
     invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invites')
     expires_at = models.DateTimeField()

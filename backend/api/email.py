@@ -60,4 +60,3 @@ def send_invite_email(*, to_email: str, invited_by_name: str, group_name: str, i
             logger.info("Invite email sent to %s (status %s)", to_email, resp.status)
     except urllib.error.HTTPError as exc:
         logger.error("Failed to send invite email to %s: %s", to_email, exc)
-        raise

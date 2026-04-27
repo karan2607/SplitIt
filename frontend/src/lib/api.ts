@@ -101,6 +101,8 @@ export interface Invite {
   invited_by: User
   expires_at: string
   is_valid: boolean
+  token: string
+  url?: string
 }
 
 export const api = {
@@ -135,6 +137,12 @@ export const api = {
       request<Invite[]>(`/api/groups/${groupId}/invite/`, {
         method: 'POST',
         body: JSON.stringify({ emails, frontend_base: window.location.origin }),
+      }),
+
+    generateLink: (groupId: string) =>
+      request<Invite>(`/api/groups/${groupId}/invite-link/`, {
+        method: 'POST',
+        body: JSON.stringify({ frontend_base: window.location.origin }),
       }),
   },
 

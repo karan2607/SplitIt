@@ -76,7 +76,7 @@ class GroupInviteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupInvite
-        fields = ['id', 'group', 'invited_email', 'invited_by', 'expires_at', 'is_valid']
+        fields = ['id', 'group', 'invited_email', 'invited_by', 'expires_at', 'is_valid', 'token']
 
 
 class ExpenseSplitSerializer(serializers.ModelSerializer):

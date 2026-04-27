@@ -16,20 +16,43 @@ const inviteSchema = z.object({
 })
 type InviteFormData = z.infer<typeof inviteSchema>
 
+function CopyLinkRow({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+      <span className="text-xs text-gray-600 flex-1 truncate">{url}</span>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="text-xs font-medium text-indigo-600 hover:text-indigo-800 whitespace-nowrap shrink-0"
+      >
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+    </div>
+  )
+}
+
 function InviteForm({ groupId, onSuccess }: { groupId: string; onSuccess: () => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
-  const [successCount, setSuccessCount] = useState<number | null>(null)
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<InviteFormData>({
     resolver: zodResolver(inviteSchema),
   })
 
   async function onSubmit(data: InviteFormData) {
     setServerError(null)
-    setSuccessCount(null)
     const emails = data.emails.split(/[\s,]+/).map(e => e.trim()).filter(Boolean)
     try {
-      const result = await api.groups.invite(groupId, emails)
-      setSuccessCount(result.length)
+      await api.groups.invite(groupId, emails)
       reset()
       onSuccess()
     } catch (err) {
@@ -37,32 +60,59 @@ function InviteForm({ groupId, onSuccess }: { groupId: string; onSuccess: () => 
     }
   }
 
+  async function handleGenerateLink() {
+    setIsGenerating(true)
+    setServerError(null)
+    try {
+      const invite = await api.groups.generateLink(groupId)
+      setGeneratedLink(invite.url ?? `${window.location.origin}/invite/${invite.token}`)
+    } catch (err) {
+      setServerError(getErrorMessage(err))
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="bg-white border border-gray-200 rounded-xl px-5 py-4 mb-4">
-      <p className="text-sm font-medium text-gray-700 mb-2">Invite people</p>
-      <div className="flex gap-2">
-        <input
-          {...register('emails')}
-          type="text"
-          placeholder="email@example.com, another@example.com"
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+    <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 mb-4 space-y-3">
+      <p className="text-sm font-medium text-gray-700">Invite people</p>
+
+      {/* Generate shareable link */}
+      <div>
         <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+          type="button"
+          onClick={handleGenerateLink}
+          disabled={isGenerating}
+          className="w-full border border-indigo-300 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
-          {isSubmitting ? 'Sending...' : 'Send invite'}
+          {isGenerating ? 'Generating...' : '🔗 Generate invite link'}
         </button>
+        {generatedLink && <CopyLinkRow url={generatedLink} />}
       </div>
-      {errors.emails && <p className="text-xs text-red-500 mt-1">{errors.emails.message}</p>}
-      {serverError && <p className="text-xs text-red-500 mt-1">{serverError}</p>}
-      {successCount !== null && (
-        <p className="text-xs text-green-600 mt-1">
-          {successCount === 0 ? 'No new invites sent (already members?)' : `${successCount} invite${successCount > 1 ? 's' : ''} sent!`}
-        </p>
-      )}
-    </form>
+
+      {/* Invite by email */}
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <p className="text-xs text-gray-500 mb-1">Or invite by email</p>
+        <div className="flex gap-2">
+          <input
+            {...register('emails')}
+            type="text"
+            placeholder="email@example.com, another@example.com"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+          >
+            {isSubmitting ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+        {errors.emails && <p className="text-xs text-red-500 mt-1">{errors.emails.message}</p>}
+      </form>
+
+      {serverError && <p className="text-xs text-red-500">{serverError}</p>}
+    </div>
   )
 }
 

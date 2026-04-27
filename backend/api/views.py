@@ -164,6 +164,22 @@ def invite_create(request, group_pk):
     return Response(GroupInviteSerializer(created, many=True).data, status=status.HTTP_201_CREATED)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsGroupMember])
+def invite_link_create(request, group_pk):
+    """Create a shareable invite link not tied to a specific email."""
+    group = get_object_or_404(Group, pk=group_pk)
+    frontend_base = request.data.get('frontend_base', 'http://localhost:5173')
+    invite = GroupInvite.objects.create(
+        group=group,
+        invited_email='',
+        invited_by=request.user,
+    )
+    data = GroupInviteSerializer(invite).data
+    data['url'] = f"{frontend_base}/invite/{invite.token}"
+    return Response(data, status=status.HTTP_201_CREATED)
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def invite_detail(request, token):
