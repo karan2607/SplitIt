@@ -63,8 +63,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database — reads DATABASE_URL from .env, falls back to SQLite for local dev
+# Handles both postgres:// (Railway) and postgresql:// URL schemes
 _db_url = os.getenv('DATABASE_URL', '')
-if _db_url.startswith('postgresql'):
+if _db_url.startswith('postgres'):
     import urllib.parse as _up
     _r = _up.urlparse(_db_url)
     DATABASES = {
