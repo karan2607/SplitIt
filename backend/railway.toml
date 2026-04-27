@@ -3,6 +3,7 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "gunicorn config.wsgi --workers 2 --threads 2 --log-file -"
+releaseCommand = "python manage.py migrate --noinput"
 healthcheckPath = "/api/health/"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
