@@ -499,17 +499,20 @@ def receipt_scan(request):
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=[
-                types.Part.from_bytes(data=file_bytes, mime_type=content_type),
-                types.Part.from_text(text=prompt),
-            ],
+            model='gemini-1.5-flash',
+            contents=types.Content(
+                role='user',
+                parts=[
+                    types.Part.from_bytes(data=file_bytes, mime_type=content_type),
+                    types.Part.from_text(text=prompt),
+                ],
+            ),
         )
         result = _json.loads(response.text)
     except _json.JSONDecodeError:
         result = {'amount': None, 'description': None}
     except Exception as exc:
-        logging.getLogger(__name__).error("Gemini receipt scan error: %s", exc)
-        return Response({'detail': 'Could not scan receipt. Please enter the amount manually.'}, status=status.HTTP_502_BAD_GATEWAY)
+        logging.getLogger(__name__).error("Gemini receipt scan error: %s", exc, exc_info=True)
+        return Response({'detail': f'Scan failed: {exc}'}, status=status.HTTP_502_BAD_GATEWAY)
 
     return Response(result)
