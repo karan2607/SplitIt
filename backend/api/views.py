@@ -34,7 +34,9 @@ User = get_user_model()
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health(request):
-    return Response({'status': 'ok'})
+    from django.conf import settings
+    db_engine = settings.DATABASES['default']['ENGINE']
+    return Response({'status': 'ok', 'db': db_engine})
 
 
 # ---------------------------------------------------------------------------
