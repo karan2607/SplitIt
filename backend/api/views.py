@@ -474,9 +474,14 @@ def receipt_scan(request):
     import os, json as _json
     import google.generativeai as genai
 
-    image_file = request.FILES.get('image')
-    if not image_file:
-        return Response({'detail': 'No image provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    upload = request.FILES.get('image')
+    if not upload:
+        return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    content_type = upload.content_type or 'image/jpeg'
+    allowed = {'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'}
+    if content_type not in allowed:
+        return Response({'detail': 'Unsupported file type.'}, status=status.HTTP_400_BAD_REQUEST)
 
     api_key = os.getenv('GEMINI_API_KEY', '')
     if not api_key:
@@ -485,8 +490,7 @@ def receipt_scan(request):
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-1.5-flash')
 
-    content_type = image_file.content_type or 'image/jpeg'
-    image_data = {'mime_type': content_type, 'data': image_file.read()}
+    image_data = {'mime_type': content_type, 'data': upload.read()}
 
     prompt = (
         'Extract the total amount from this receipt. '

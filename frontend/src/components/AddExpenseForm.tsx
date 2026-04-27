@@ -189,8 +189,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/*,application/pdf"
               className="hidden"
               onChange={handleScanReceipt}
             />
