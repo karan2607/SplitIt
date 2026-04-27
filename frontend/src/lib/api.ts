@@ -27,8 +27,11 @@ async function request<T>(
 ): Promise<T> {
   const token = localStorage.getItem('token')
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
+  }
+  // Don't set Content-Type for FormData — browser sets it with the correct multipart boundary
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
   }
   if (token) headers['Authorization'] = `Token ${token}`
 
@@ -118,6 +121,18 @@ export const api = {
 
     me: () =>
       request<User>('/api/auth/me/'),
+
+    forgotPassword: (email: string) =>
+      request<{ detail: string }>('/api/auth/password-reset/', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+
+    resetPassword: (token: string, password: string) =>
+      request<{ detail: string }>('/api/auth/password-reset/confirm/', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+      }),
   },
 
   groups: {
@@ -173,7 +188,8 @@ export const api = {
       description: string
       amount: string
       paid_by: string
-      split_among: string[]
+      split_among?: string[]
+      splits?: { user_id: string; percentage: string }[]
       date?: string
     }) =>
       request<Expense>(`/api/groups/${groupId}/expenses/`, {
@@ -186,6 +202,7 @@ export const api = {
       amount?: string
       paid_by?: string
       split_among?: string[]
+      splits?: { user_id: string; percentage: string }[]
       date?: string
     }) =>
       request<Expense>(`/api/groups/${groupId}/expenses/${expenseId}/`, {
@@ -195,5 +212,15 @@ export const api = {
 
     delete: (groupId: string, expenseId: string) =>
       request<void>(`/api/groups/${groupId}/expenses/${expenseId}/`, { method: 'DELETE' }),
+  },
+
+  receipt: {
+    scan: (image: File) => {
+      const form = new FormData()
+      form.append('image', image)
+      return request<{ amount: string | null; description: string | null }>(
+        '/api/receipt/scan/', { method: 'POST', body: form }
+      )
+    },
   },
 }

@@ -8,6 +8,10 @@ urlpatterns = [
     path('auth/login/', views.login, name='login'),
     path('auth/logout/', views.logout, name='logout'),
     path('auth/me/', views.me, name='me'),
+    path('auth/password-reset/', views.password_reset_request, name='password-reset-request'),
+    path('auth/password-reset/confirm/', views.password_reset_confirm, name='password-reset-confirm'),
+    # Receipt scanner
+    path('receipt/scan/', views.receipt_scan, name='receipt-scan'),
     # Groups
     path('groups/', views.groups, name='groups'),
     path('groups/<uuid:pk>/', views.group_detail, name='group-detail'),

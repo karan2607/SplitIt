@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Count
 
-from .models import Group, GroupMember, GroupInvite, Expense, ExpenseSplit
+from .models import Group, GroupMember, GroupInvite, Expense, ExpenseSplit, PasswordResetToken
 from .balance import compute_balances
 from .serializers import (
     RegisterSerializer,
@@ -18,9 +18,11 @@ from .serializers import (
     ExpenseSerializer,
     ExpenseCreateSerializer,
     ExpenseUpdateSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
 )
 from .permissions import IsGroupMember
-from .email import send_invite_email
+from .email import send_invite_email, send_password_reset_email
 
 User = get_user_model()
 
@@ -73,6 +75,54 @@ def logout(request):
 @permission_classes([IsAuthenticated])
 def me(request):
     return Response(UserSerializer(request.user).data)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_request(request):
+    serializer = PasswordResetRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    email = serializer.validated_data['email'].lower()
+    frontend_base = request.data.get('frontend_base', 'http://localhost:5173')
+    user = User.objects.filter(email=email).first()
+
+    # Always return 200 — don't reveal whether the email exists
+    if user:
+        token = PasswordResetToken.objects.create(user=user)
+        reset_url = f"{frontend_base}/reset-password/{token.token}"
+        try:
+            send_password_reset_email(to_email=user.email, user_name=user.name, reset_url=reset_url)
+        except Exception:
+            pass
+
+    return Response({'detail': 'If an account with that email exists, a reset link has been sent.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_confirm(request):
+    serializer = PasswordResetConfirmSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    token_str = serializer.validated_data['token']
+    new_password = serializer.validated_data['password']
+
+    token = get_object_or_404(PasswordResetToken, token=token_str)
+    if not token.is_valid:
+        return Response({'detail': 'This reset link has expired or already been used.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = token.user
+    user.set_password(new_password)
+    user.save()
+
+    from django.utils import timezone as tz
+    token.used_at = tz.now()
+    token.save(update_fields=['used_at'])
+
+    return Response({'detail': 'Password reset successfully. You can now log in.'})
 
 
 # ---------------------------------------------------------------------------
@@ -233,14 +283,8 @@ def expenses(request, group_pk):
 
     data = serializer.validated_data
     from decimal import Decimal, ROUND_HALF_UP
-    split_ids = data['split_among']
-    per_person = (data['amount'] / Decimal(len(split_ids))).quantize(
-        Decimal('0.01'), rounding=ROUND_HALF_UP
-    )
 
-    User = get_user_model()
     paid_by_user = User.objects.get(pk=data['paid_by'])
-
     kwargs = {'group': group, 'paid_by': paid_by_user, 'created_by': request.user}
     if 'date' in data:
         kwargs['date'] = data['date']
@@ -251,12 +295,30 @@ def expenses(request, group_pk):
         **kwargs,
     )
 
-    splits = [
-        ExpenseSplit(expense=expense, user_id=uid, amount_owed=per_person)
-        for uid in split_ids
-    ]
-    ExpenseSplit.objects.bulk_create(splits)
+    if 'splits' in data:
+        # Custom percentage split
+        split_rows = [
+            ExpenseSplit(
+                expense=expense,
+                user_id=s['user_id'],
+                amount_owed=(data['amount'] * s['percentage'] / Decimal(100)).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                ),
+            )
+            for s in data['splits']
+        ]
+    else:
+        # Equal split
+        split_ids = data['split_among']
+        per_person = (data['amount'] / Decimal(len(split_ids))).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+        split_rows = [
+            ExpenseSplit(expense=expense, user_id=uid, amount_owed=per_person)
+            for uid in split_ids
+        ]
 
+    ExpenseSplit.objects.bulk_create(split_rows)
     return Response(ExpenseSerializer(expense).data, status=status.HTTP_201_CREATED)
 
 
@@ -290,23 +352,41 @@ def expense_detail(request, group_pk, expense_pk):
         expense.date = data['date']
 
     amount_changed = 'amount' in data
-    splits_changed = 'split_among' in data
+    splits_changed = 'split_among' in data or 'splits' in data
 
     if amount_changed:
         expense.amount = data['amount']
+
     if amount_changed or splits_changed:
-        split_ids = data.get('split_among') or list(
-            expense.splits.values_list('user_id', flat=True)
-        )
         new_amount = data.get('amount', expense.amount)
-        per_person = (new_amount / Decimal(len(split_ids))).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP
-        )
         expense.splits.all().delete()
-        ExpenseSplit.objects.bulk_create([
-            ExpenseSplit(expense=expense, user_id=uid, amount_owed=per_person)
-            for uid in split_ids
-        ])
+
+        if 'splits' in data:
+            # Custom percentage split
+            split_rows = [
+                ExpenseSplit(
+                    expense=expense,
+                    user_id=s['user_id'],
+                    amount_owed=(new_amount * s['percentage'] / Decimal(100)).quantize(
+                        Decimal('0.01'), rounding=ROUND_HALF_UP
+                    ),
+                )
+                for s in data['splits']
+            ]
+        else:
+            # Equal split (use provided split_among or fall back to existing split users)
+            split_ids = data.get('split_among') or list(
+                expense.splits.values_list('user_id', flat=True)
+            )
+            per_person = (new_amount / Decimal(len(split_ids))).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+            split_rows = [
+                ExpenseSplit(expense=expense, user_id=uid, amount_owed=per_person)
+                for uid in split_ids
+            ]
+
+        ExpenseSplit.objects.bulk_create(split_rows)
 
     expense.save()
     expense.refresh_from_db()
@@ -380,3 +460,56 @@ def settle(request, group_pk):
     ExpenseSplit.objects.create(expense=expense, user=to_user, amount_owed=amount_dec)
 
     return Response(ExpenseSerializer(expense).data, status=status.HTTP_201_CREATED)
+
+
+# ---------------------------------------------------------------------------
+# AI Receipt Scanner
+# ---------------------------------------------------------------------------
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def receipt_scan(request):
+    import os, base64, json as _json
+    import anthropic
+
+    image_file = request.FILES.get('image')
+    if not image_file:
+        return Response({'detail': 'No image provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    api_key = os.getenv('ANTHROPIC_API_KEY', '')
+    if not api_key:
+        return Response({'detail': 'Receipt scanning is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    content_type = image_file.content_type or 'image/jpeg'
+    b64_data = base64.standard_b64encode(image_file.read()).decode('utf-8')
+
+    client = anthropic.Anthropic(api_key=api_key)
+    message = client.messages.create(
+        model='claude-haiku-4-5-20251001',
+        max_tokens=256,
+        messages=[{
+            'role': 'user',
+            'content': [
+                {
+                    'type': 'image',
+                    'source': {'type': 'base64', 'media_type': content_type, 'data': b64_data},
+                },
+                {
+                    'type': 'text',
+                    'text': (
+                        'Extract the total amount from this receipt. '
+                        'Reply with JSON only, no markdown: '
+                        '{"amount": "XX.XX", "description": "brief merchant or category description"}. '
+                        'If you cannot find a clear total, return {"amount": null, "description": null}.'
+                    ),
+                },
+            ],
+        }],
+    )
+
+    try:
+        result = _json.loads(message.content[0].text)
+    except Exception:
+        result = {'amount': None, 'description': None}
+
+    return Response(result)

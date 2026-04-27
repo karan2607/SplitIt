@@ -5,6 +5,8 @@ import { api, type User } from './lib/api'
 import { setToken, clearToken, getToken } from './lib/auth'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import GroupDetail from './pages/GroupDetail'
 import InviteAccept from './pages/InviteAccept'
@@ -65,6 +67,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
       <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route
         path="/dashboard"
         element={

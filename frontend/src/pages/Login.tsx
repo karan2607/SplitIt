@@ -87,6 +87,12 @@ export default function Login() {
             </p>
           )}
 
+          <div className="flex justify-end">
+            <Link to="/forgot-password" className="text-xs text-indigo-600 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={isSubmitting}

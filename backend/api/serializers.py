@@ -31,6 +31,19 @@ class RegisterSerializer(serializers.Serializer):
         )
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -100,11 +113,20 @@ class ExpenseSerializer(serializers.ModelSerializer):
         ]
 
 
+class CustomSplitSerializer(serializers.Serializer):
+    """One entry in a percentage-based split: {user_id, percentage}."""
+    user_id = serializers.UUIDField()
+    percentage = serializers.DecimalField(max_digits=6, decimal_places=2, min_value=Decimal('0.01'))
+
+
 class ExpenseUpdateSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=255, required=False)
     amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0.01'), required=False)
     paid_by = serializers.UUIDField(required=False)
+    # Equal split (list of UUIDs) — mutually exclusive with splits
     split_among = serializers.ListField(child=serializers.UUIDField(), min_length=1, required=False)
+    # Custom % split — mutually exclusive with split_among
+    splits = serializers.ListField(child=CustomSplitSerializer(), min_length=1, required=False)
     date = serializers.DateField(required=False)
 
     def validate(self, data):
@@ -114,10 +136,21 @@ class ExpenseUpdateSerializer(serializers.Serializer):
         if 'paid_by' in data and data['paid_by'] not in member_ids:
             raise serializers.ValidationError({'paid_by': 'Payer must be a group member.'})
 
+        if 'split_among' in data and 'splits' in data:
+            raise serializers.ValidationError('Provide either split_among or splits, not both.')
+
         if 'split_among' in data:
             unknown = set(data['split_among']) - member_ids
             if unknown:
                 raise serializers.ValidationError({'split_among': 'All split members must be group members.'})
+
+        if 'splits' in data:
+            unknown = {s['user_id'] for s in data['splits']} - member_ids
+            if unknown:
+                raise serializers.ValidationError({'splits': 'All split members must be group members.'})
+            total = sum(s['percentage'] for s in data['splits'])
+            if abs(total - Decimal('100')) > Decimal('0.01'):
+                raise serializers.ValidationError({'splits': f'Percentages must sum to 100 (got {total}).'})
 
         return data
 
@@ -126,20 +159,38 @@ class ExpenseCreateSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=255)
     amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0.01'))
     paid_by = serializers.UUIDField()
-    split_among = serializers.ListField(child=serializers.UUIDField(), min_length=1)
+    # Equal split (list of UUIDs) — mutually exclusive with splits
+    split_among = serializers.ListField(child=serializers.UUIDField(), min_length=1, required=False)
+    # Custom % split — mutually exclusive with split_among
+    splits = serializers.ListField(child=CustomSplitSerializer(), min_length=1, required=False)
     date = serializers.DateField(required=False)
 
     def validate(self, data):
         group = self.context['group']
-        member_ids = set(
-            group.members.values_list('user_id', flat=True)
-        )
+        member_ids = set(group.members.values_list('user_id', flat=True))
 
         if data['paid_by'] not in member_ids:
             raise serializers.ValidationError({'paid_by': 'Payer must be a group member.'})
 
-        unknown = set(data['split_among']) - member_ids
-        if unknown:
-            raise serializers.ValidationError({'split_among': 'All split members must be group members.'})
+        has_equal = 'split_among' in data
+        has_custom = 'splits' in data
+
+        if has_equal and has_custom:
+            raise serializers.ValidationError('Provide either split_among or splits, not both.')
+        if not has_equal and not has_custom:
+            raise serializers.ValidationError('Provide either split_among or splits.')
+
+        if has_equal:
+            unknown = set(data['split_among']) - member_ids
+            if unknown:
+                raise serializers.ValidationError({'split_among': 'All split members must be group members.'})
+
+        if has_custom:
+            unknown = {s['user_id'] for s in data['splits']} - member_ids
+            if unknown:
+                raise serializers.ValidationError({'splits': 'All split members must be group members.'})
+            total = sum(s['percentage'] for s in data['splits'])
+            if abs(total - Decimal('100')) > Decimal('0.01'):
+                raise serializers.ValidationError({'splits': f'Percentages must sum to 100 (got {total}).'})
 
         return data
