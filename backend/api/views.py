@@ -471,9 +471,8 @@ def settle(request, group_pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def receipt_scan(request):
-    import os, json as _json, logging
-    from google import genai
-    from google.genai import types
+    import os, base64, json as _json, logging
+    import urllib.request, urllib.error
 
     upload = request.FILES.get('image')
     if not upload:
@@ -488,8 +487,8 @@ def receipt_scan(request):
     if not api_key:
         return Response({'detail': 'Receipt scanning is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-    client = genai.Client(api_key=api_key)
     file_bytes = upload.read()
+    b64 = base64.b64encode(file_bytes).decode()
     prompt = (
         'Extract the total amount from this receipt. '
         'Reply with JSON only, no markdown: '
@@ -497,18 +496,23 @@ def receipt_scan(request):
         'If you cannot find a clear total, return {"amount": null, "description": null}.'
     )
 
+    payload = _json.dumps({
+        'contents': [{
+            'parts': [
+                {'inline_data': {'mime_type': content_type, 'data': b64}},
+                {'text': prompt},
+            ]
+        }]
+    }).encode()
+
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}'
+    req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+
     try:
-        response = client.models.generate_content(
-            model='gemini-1.5-flash-latest',
-            contents=types.Content(
-                role='user',
-                parts=[
-                    types.Part.from_bytes(data=file_bytes, mime_type=content_type),
-                    types.Part.from_text(text=prompt),
-                ],
-            ),
-        )
-        result = _json.loads(response.text)
+        with urllib.request.urlopen(req) as resp:
+            data = _json.loads(resp.read())
+        text = data['candidates'][0]['content']['parts'][0]['text']
+        result = _json.loads(text)
     except _json.JSONDecodeError:
         result = {'amount': None, 'description': None}
     except Exception as exc:
