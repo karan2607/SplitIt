@@ -78,8 +78,15 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
   const customTotalOk = Math.abs(customTotal - 100) < 0.01
 
   function updateCustomPct(userId: string, value: string) {
+    const newPct = parseFloat(value) || 0
+    const others = customSplits.filter((s) => s.user_id !== userId)
+    const perOther = others.length > 0
+      ? (Math.max(0, 100 - newPct) / others.length).toFixed(2)
+      : '0'
     setCustomSplits((prev) =>
-      prev.map((s) => (s.user_id === userId ? { ...s, percentage: value } : s))
+      prev.map((s) =>
+        s.user_id === userId ? { ...s, percentage: value } : { ...s, percentage: perOther }
+      )
     )
   }
 
