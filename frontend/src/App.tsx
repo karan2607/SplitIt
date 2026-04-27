@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthContext, useAuth } from './hooks/useAuth'
-import { api, type User } from './lib/api'
+import { api, ApiError, type User } from './lib/api'
 import { setToken, clearToken, getToken } from './lib/auth'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -22,7 +22,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
     }
     api.auth.me()
       .then(setUser)
-      .catch(() => clearToken())
+      .catch((err) => {
+        // Only clear the token when the server explicitly rejects it (401).
+        // A 502/503 during a deploy restart should not log the user out.
+        if (err instanceof ApiError && err.status === 401) clearToken()
+      })
       .finally(() => setIsLoading(false))
   }, [])
 
