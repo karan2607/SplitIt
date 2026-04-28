@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthContext, useAuth } from './hooks/useAuth'
 import { api, ApiError, type User } from './lib/api'
@@ -11,9 +11,13 @@ import Dashboard from './pages/Dashboard'
 import GroupDetail from './pages/GroupDetail'
 import InviteAccept from './pages/InviteAccept'
 
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
+const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'] as const
+
 function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const lastActiveRef = useRef(Date.now())
 
   useEffect(() => {
     if (!getToken()) {
@@ -33,6 +37,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   function login(token: string, userData: User) {
     setToken(token)
     setUser(userData)
+    lastActiveRef.current = Date.now()
   }
 
   function logout() {
@@ -40,6 +45,28 @@ function AuthProvider({ children }: { children: ReactNode }) {
     clearToken()
     setUser(null)
   }
+
+  // Auto-logout after 30 minutes of inactivity, only while logged in
+  useEffect(() => {
+    if (!user) return
+
+    function onActivity() {
+      lastActiveRef.current = Date.now()
+    }
+
+    ACTIVITY_EVENTS.forEach((e) => window.addEventListener(e, onActivity, { passive: true }))
+
+    const timer = setInterval(() => {
+      if (Date.now() - lastActiveRef.current > INACTIVITY_TIMEOUT_MS) {
+        logout()
+      }
+    }, 60_000) // check every minute
+
+    return () => {
+      ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, onActivity))
+      clearInterval(timer)
+    }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout }}>
