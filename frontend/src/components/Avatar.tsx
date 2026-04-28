@@ -29,12 +29,22 @@ const SIZE_CLASSES = {
 }
 
 interface Props {
-  user: Pick<User, 'name'>
+  user: Pick<User, 'name' | 'avatar_url'>
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
 export default function Avatar({ user, size = 'md', className = '' }: Props) {
+  if (user.avatar_url) {
+    return (
+      <img
+        src={user.avatar_url}
+        alt={user.name}
+        className={`${SIZE_CLASSES[size]} rounded-full object-cover flex-shrink-0 ${className}`}
+      />
+    )
+  }
+
   return (
     <div
       className={`${SIZE_CLASSES[size]} ${colorFor(user.name)} rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 ${className}`}

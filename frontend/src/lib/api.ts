@@ -140,10 +140,10 @@ export const api = {
         body: JSON.stringify({ current_password, new_password }),
       }),
 
-    updateProfile: (name: string) =>
+    updateProfile: (data: { name?: string; avatar_url?: string | null }) =>
       request<User>('/api/auth/me/', {
         method: 'PATCH',
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(data),
       }),
   },
 

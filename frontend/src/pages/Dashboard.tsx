@@ -105,7 +105,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-violet-50">
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center justify-between shadow-md">
         <h1 className="text-xl font-bold text-white tracking-tight">SplitIt</h1>
         <div className="flex items-center gap-3">

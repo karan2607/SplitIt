@@ -82,8 +82,15 @@ def me(request):
         ser = UpdateProfileSerializer(data=request.data)
         if not ser.is_valid():
             return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
-        request.user.name = ser.validated_data['name']
-        request.user.save(update_fields=['name'])
+        update_fields = []
+        if 'name' in ser.validated_data:
+            request.user.name = ser.validated_data['name']
+            update_fields.append('name')
+        if 'avatar_url' in ser.validated_data:
+            request.user.avatar_url = ser.validated_data['avatar_url'] or None
+            update_fields.append('avatar_url')
+        if update_fields:
+            request.user.save(update_fields=update_fields)
         return Response(UserSerializer(request.user).data)
     return Response(UserSerializer(request.user).data)
 

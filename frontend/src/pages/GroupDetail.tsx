@@ -271,7 +271,7 @@ export default function GroupDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-violet-50">
         <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
           <button onClick={() => navigate('/dashboard')} className="text-white/60 hover:text-white transition-colors text-lg leading-none" aria-label="Back">←</button>
           <div className="h-6 w-32 bg-white/20 rounded animate-pulse" />
@@ -297,7 +297,7 @@ export default function GroupDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-violet-50">
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
         <button
           onClick={() => navigate('/dashboard')}

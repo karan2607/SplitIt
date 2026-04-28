@@ -123,7 +123,8 @@ class PasswordChangeSerializer(serializers.Serializer):
 
 
 class UpdateProfileSerializer(serializers.Serializer):
-    name = serializers.CharField(required=True, max_length=255)
+    name = serializers.CharField(required=False, max_length=255)
+    avatar_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
 
 
 class CustomSplitSerializer(serializers.Serializer):

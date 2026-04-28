@@ -9,6 +9,7 @@ import { setToken } from '../lib/auth'
 import { getErrorMessage } from '../lib/errors'
 import { useToast } from '../components/Toast'
 import Avatar from '../components/Avatar'
+import AvatarPicker from '../components/AvatarPicker'
 
 const nameSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -31,6 +32,8 @@ export default function Profile() {
   const { showToast } = useToast()
   const [nameError, setNameError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [selectedAvatar, setSelectedAvatar] = useState<string>(user?.avatar_url ?? '')
+  const [savingAvatar, setSavingAvatar] = useState(false)
 
   const nameForm = useForm<NameFormData>({
     resolver: zodResolver(nameSchema),
@@ -41,11 +44,25 @@ export default function Profile() {
     resolver: zodResolver(passwordSchema),
   })
 
+  async function handleAvatarSelect(url: string) {
+    setSelectedAvatar(url)
+    setSavingAvatar(true)
+    try {
+      const updated = await api.auth.updateProfile({ avatar_url: url || null })
+      login(localStorage.getItem('token')!, updated)
+      showToast(url ? 'Avatar updated' : 'Avatar removed')
+    } catch (err) {
+      showToast(getErrorMessage(err), 'error')
+      setSelectedAvatar(user?.avatar_url ?? '')
+    } finally {
+      setSavingAvatar(false)
+    }
+  }
+
   async function handleNameSubmit(data: NameFormData) {
     setNameError(null)
     try {
-      const updated = await api.auth.updateProfile(data.name)
-      // Re-sync user in auth context by refreshing token (token unchanged)
+      const updated = await api.auth.updateProfile({ name: data.name })
       login(localStorage.getItem('token')!, updated)
       showToast('Name updated')
     } catch (err) {
@@ -57,7 +74,6 @@ export default function Profile() {
     setPasswordError(null)
     try {
       const res = await api.auth.changePassword(data.current_password, data.new_password)
-      // Server rotates the token — update stored token and keep user logged in
       setToken(res.token)
       login(res.token, user!)
       passwordForm.reset()
@@ -70,7 +86,7 @@ export default function Profile() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-violet-50">
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
         <button
           onClick={() => navigate('/dashboard')}
@@ -84,16 +100,32 @@ export default function Profile() {
 
       <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
         {/* Account info */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center gap-4">
-          <Avatar user={user} size="lg" />
+        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6 flex items-center gap-4">
+          <div className="relative">
+            <Avatar user={{ ...user, avatar_url: selectedAvatar || null }} size="lg" />
+            {savingAvatar && (
+              <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center">
+                <span className="text-white text-xs">...</span>
+              </div>
+            )}
+          </div>
           <div>
             <p className="font-semibold text-gray-900 text-lg">{user.name}</p>
             <p className="text-sm text-gray-500">{user.email}</p>
           </div>
         </div>
 
+        {/* Avatar picker */}
+        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Choose avatar</h2>
+          <AvatarPicker
+            selected={selectedAvatar || null}
+            onSelect={handleAvatarSelect}
+          />
+        </div>
+
         {/* Edit name */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Edit name</h2>
           <form onSubmit={nameForm.handleSubmit(handleNameSubmit)} noValidate className="space-y-4">
             <div>
@@ -123,7 +155,7 @@ export default function Profile() {
         </div>
 
         {/* Change password */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Change password</h2>
           <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} noValidate className="space-y-4">
             <div>
@@ -177,7 +209,6 @@ export default function Profile() {
           </form>
         </div>
 
-        {/* Danger zone */}
         <div className="pt-2">
           <button
             onClick={() => { logout(); navigate('/login', { replace: true }) }}
