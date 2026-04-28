@@ -64,7 +64,7 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-violet-50 rounded-2xl shadow-xl w-full max-w-md p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">New Group</h2>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
