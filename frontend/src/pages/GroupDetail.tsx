@@ -91,7 +91,7 @@ function InviteForm({ groupId, onSuccess }: { groupId: string; onSuccess: () => 
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl px-5 py-4 mb-4 space-y-3 shadow-sm">
+    <div className="bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 mb-4 space-y-3 shadow-sm">
       <p className="text-sm font-medium text-gray-700">Invite people</p>
 
       <div>
