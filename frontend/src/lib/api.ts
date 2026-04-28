@@ -157,6 +157,9 @@ export const api = {
     get: (id: string) =>
       request<GroupDetail>(`/api/groups/${id}/`),
 
+    update: (id: string, data: { name?: string; description?: string }) =>
+      request<GroupDetail>(`/api/groups/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+
     delete: (id: string) =>
       request<void>(`/api/groups/${id}/`, { method: 'DELETE' }),
 

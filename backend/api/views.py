@@ -185,7 +185,7 @@ def groups(request):
     return Response(GroupListSerializer(group).data, status=status.HTTP_201_CREATED)
 
 
-@api_view(['GET', 'DELETE'])
+@api_view(['GET', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated, IsGroupMember])
 def group_detail(request, pk):
     group = get_object_or_404(Group, pk=pk)
@@ -199,9 +199,33 @@ def group_detail(request, pk):
         )
         return Response(GroupSerializer(group).data)
 
-    # DELETE — only the group creator (admin) can delete
-    if group.created_by != request.user:
-        return Response({'detail': 'Only the group creator can delete this group.'}, status=status.HTTP_403_FORBIDDEN)
+    # PATCH / DELETE — admin only
+    is_admin = GroupMember.objects.filter(group=group, user=request.user, role='admin').exists()
+    if not is_admin:
+        return Response({'detail': 'Only group admins can do this.'}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == 'PATCH':
+        update_fields = []
+        if 'name' in request.data:
+            name = str(request.data['name']).strip()
+            if not name:
+                return Response({'name': 'Name cannot be blank.'}, status=status.HTTP_400_BAD_REQUEST)
+            group.name = name
+            update_fields.append('name')
+        if 'description' in request.data:
+            group.description = request.data['description'] or None
+            update_fields.append('description')
+        if update_fields:
+            group.save(update_fields=update_fields)
+        group = (
+            Group.objects
+            .prefetch_related('members__user')
+            .annotate(**{'members__count': Count('members')})
+            .get(pk=pk)
+        )
+        return Response(GroupSerializer(group).data)
+
+    # DELETE
     group.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
