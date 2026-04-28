@@ -133,6 +133,18 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ token, password }),
       }),
+
+    changePassword: (current_password: string, new_password: string) =>
+      request<{ token: string }>('/api/auth/password-change/', {
+        method: 'POST',
+        body: JSON.stringify({ current_password, new_password }),
+      }),
+
+    updateProfile: (name: string) =>
+      request<User>('/api/auth/me/', {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      }),
   },
 
   groups: {

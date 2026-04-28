@@ -10,6 +10,7 @@ urlpatterns = [
     path('auth/me/', views.me, name='me'),
     path('auth/password-reset/', views.password_reset_request, name='password-reset-request'),
     path('auth/password-reset/confirm/', views.password_reset_confirm, name='password-reset-confirm'),
+    path('auth/password-change/', views.password_change, name='password-change'),
     # Receipt scanner
     path('receipt/scan/', views.receipt_scan, name='receipt-scan'),
     # Groups

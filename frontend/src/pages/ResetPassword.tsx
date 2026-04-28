@@ -37,8 +37,8 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-violet-900 via-violet-700 to-indigo-800 px-4">
+      <div className="w-full max-w-sm bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Set new password</h1>
         <p className="text-sm text-gray-500 mb-6">Choose a strong password for your account.</p>
 
@@ -50,7 +50,7 @@ export default function ResetPassword() {
               type="password"
               autoFocus
               placeholder="••••••••"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
           </div>
@@ -61,7 +61,7 @@ export default function ResetPassword() {
               {...register('confirm')}
               type="password"
               placeholder="••••••••"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {errors.confirm && <p className="text-xs text-red-500 mt-1">{errors.confirm.message}</p>}
           </div>
@@ -75,14 +75,14 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
+            className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
           >
             {isSubmitting ? 'Saving...' : 'Set password'}
           </button>
         </form>
 
         <p className="text-sm text-gray-500 text-center mt-6">
-          <Link to="/login" className="text-indigo-600 hover:underline font-medium">
+          <Link to="/login" className="text-violet-600 hover:underline font-medium">
             Back to sign in
           </Link>
         </p>

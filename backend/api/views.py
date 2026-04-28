@@ -20,6 +20,8 @@ from .serializers import (
     ExpenseUpdateSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
+    PasswordChangeSerializer,
+    UpdateProfileSerializer,
 )
 from .permissions import IsGroupMember
 from .email import send_invite_email, send_password_reset_email
@@ -73,10 +75,33 @@ def logout(request):
     return Response({'detail': 'Logged out.'})
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def me(request):
+    if request.method == 'PATCH':
+        ser = UpdateProfileSerializer(data=request.data)
+        if not ser.is_valid():
+            return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+        request.user.name = ser.validated_data['name']
+        request.user.save(update_fields=['name'])
+        return Response(UserSerializer(request.user).data)
     return Response(UserSerializer(request.user).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def password_change(request):
+    ser = PasswordChangeSerializer(data=request.data)
+    if not ser.is_valid():
+        return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+    if not request.user.check_password(ser.validated_data['current_password']):
+        return Response({'detail': 'Current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+    request.user.set_password(ser.validated_data['new_password'])
+    request.user.save()
+    # Rotate token so other sessions are invalidated
+    Token.objects.filter(user=request.user).delete()
+    token = Token.objects.create(user=request.user)
+    return Response({'token': token.key})
 
 
 @api_view(['POST'])

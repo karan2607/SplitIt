@@ -34,11 +34,8 @@ export default function Signup() {
     setServerError(null)
     try {
       const res = await api.auth.signup(data)
-      // Set token in localStorage first so subsequent API calls are authenticated
       setToken(res.token)
 
-      // If coming from an invite link, accept it directly rather than redirecting
-      // back through the invite page (avoids a race with the route-level auth guard)
       if (next.startsWith('/invite/')) {
         const inviteToken = next.replace('/invite/', '')
         try {
@@ -59,10 +56,12 @@ export default function Signup() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Create account</h1>
-        <p className="text-sm text-gray-500 mb-6">Start splitting expenses with friends</p>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-violet-900 via-violet-700 to-indigo-800 px-4">
+      <div className="w-full max-w-sm bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Create account</h1>
+          <p className="text-sm text-gray-500">Start splitting expenses with friends</p>
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
@@ -71,7 +70,7 @@ export default function Signup() {
               {...register('name')}
               type="text"
               placeholder="Alice"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
           </div>
@@ -82,7 +81,7 @@ export default function Signup() {
               {...register('email')}
               type="email"
               placeholder="you@example.com"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
           </div>
@@ -93,7 +92,7 @@ export default function Signup() {
               {...register('password')}
               type="password"
               placeholder="••••••••"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
           </div>
@@ -107,7 +106,7 @@ export default function Signup() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
+            className="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
           >
             {isSubmitting ? 'Creating account...' : 'Create account'}
           </button>
@@ -115,7 +114,7 @@ export default function Signup() {
 
         <p className="text-sm text-gray-500 text-center mt-6">
           Already have an account?{' '}
-          <Link to="/login" className="text-indigo-600 hover:underline font-medium">
+          <Link to="/login" className="text-violet-600 hover:underline font-medium">
             Sign in
           </Link>
         </p>

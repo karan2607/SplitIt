@@ -10,6 +10,8 @@ import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import GroupDetail from './pages/GroupDetail'
 import InviteAccept from './pages/InviteAccept'
+import Profile from './pages/Profile'
+import { ToastProvider } from './components/Toast'
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
 const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'] as const
@@ -118,6 +120,14 @@ function AppRoutes() {
       />
       {/* Invite accept is public — logged-in and logged-out users both land here */}
       <Route path="/invite/:token" element={<InviteAccept />} />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
     </Routes>
   )
@@ -127,7 +137,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   )

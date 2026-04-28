@@ -113,6 +113,19 @@ class ExpenseSerializer(serializers.ModelSerializer):
         ]
 
 
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+
+class UpdateProfileSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, max_length=255)
+
+
 class CustomSplitSerializer(serializers.Serializer):
     """One entry in a percentage-based split: {user_id, percentage}."""
     user_id = serializers.UUIDField()

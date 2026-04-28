@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { api, type GroupDetail, type Expense } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
+import Avatar from './Avatar'
 
 const schema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -171,7 +172,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
               {...register('description')}
               autoFocus
               placeholder="e.g. Dinner, Taxi, Groceries"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description.message}</p>}
           </div>
@@ -185,7 +186,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                 step="0.01"
                 min="0.01"
                 placeholder="0.00"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
               <button
                 type="button"
@@ -211,7 +212,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
             <label className="block text-sm font-medium text-gray-700 mb-1">Paid by</label>
             <select
               {...register('paid_by')}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
             >
               <option value="">Select a person</option>
               {group.members.map((m) => (
@@ -226,7 +227,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
               <label className="block text-sm font-medium text-gray-700">
                 Split
                 {splitMode === 'equal' && perPerson && (
-                  <span className="ml-2 text-xs font-normal text-indigo-600">
+                  <span className="ml-2 text-xs font-normal text-violet-600">
                     ${perPerson} / person
                   </span>
                 )}
@@ -235,14 +236,14 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                 <button
                   type="button"
                   onClick={() => setSplitMode('equal')}
-                  className={`px-3 py-1 transition-colors ${splitMode === 'equal' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`px-3 py-1 transition-colors ${splitMode === 'equal' ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                   Equal
                 </button>
                 <button
                   type="button"
                   onClick={() => setSplitMode('custom')}
-                  className={`px-3 py-1 transition-colors ${splitMode === 'custom' ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`px-3 py-1 transition-colors ${splitMode === 'custom' ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                   Custom %
                 </button>
@@ -272,8 +273,9 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                                   : [...field.value, m.user.id]
                               )
                             }}
-                            className="accent-indigo-600"
+                            className="accent-violet-600"
                           />
+                          <Avatar user={m.user} size="sm" />
                           <span className="text-sm text-gray-800">{m.user.name}</span>
                         </label>
                       )
@@ -292,9 +294,10 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                       key={m.user.id}
                       className="flex items-center gap-3 px-3 py-2 border border-gray-200 rounded-lg"
                     >
+                      <Avatar user={m.user} size="sm" />
                       <span className="flex-1 text-sm text-gray-800">{m.user.name}</span>
                       {dollarAmt && (
-                        <span className="text-xs text-indigo-600">${dollarAmt}</span>
+                        <span className="text-xs text-violet-600">${dollarAmt}</span>
                       )}
                       <div className="flex items-center gap-1">
                         <input
@@ -304,7 +307,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                           step="0.01"
                           value={split.percentage}
                           onChange={(e) => updateCustomPct(m.user.id, e.target.value)}
-                          className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-violet-500"
                         />
                         <span className="text-sm text-gray-500">%</span>
                       </div>
@@ -326,7 +329,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
             <input
               {...register('date')}
               type="date"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>
 
@@ -347,7 +350,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
             <button
               type="submit"
               disabled={isSubmitting || (splitMode === 'custom' && !customTotalOk)}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
+              className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
             >
               {isSubmitting ? 'Saving...' : isEdit ? 'Save changes' : 'Add expense'}
             </button>
