@@ -214,7 +214,8 @@ export default function GroupDetail() {
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [balances, setBalances] = useState<Balance[]>([])
-  const [balancesLoading, setBalancesLoading] = useState(false)
+  const [balancesLoading, setBalancesLoading] = useState(true)
+  const [balancesLoaded, setBalancesLoaded] = useState(false)
   const [settlingBalance, setSettlingBalance] = useState<Balance | null>(null)
 
   useEffect(() => {
@@ -225,13 +226,13 @@ export default function GroupDetail() {
       .finally(() => setExpensesLoading(false))
   }, [id])
 
+  // Load balances on mount so the summary bar is correct immediately
   useEffect(() => {
-    if (!id || activeTab !== 'balances') return
-    setBalancesLoading(true)
+    if (!id) return
     api.balances.list(id)
-      .then((res) => setBalances(res.balances))
+      .then((res) => { setBalances(res.balances); setBalancesLoaded(true) })
       .finally(() => setBalancesLoading(false))
-  }, [id, activeTab])
+  }, [id])
 
   function handleExpenseCreated(expense: Expense) {
     setExpenses((prev) => [expense, ...prev])
@@ -316,7 +317,7 @@ export default function GroupDetail() {
 
       {/* Summary bar */}
       {!expensesLoading && (
-        <div className="bg-white border-b border-gray-100 px-6 py-4">
+        <div className="bg-violet-50 border-b border-violet-100 px-6 py-4">
           <div className="max-w-3xl mx-auto flex items-center gap-6 flex-wrap">
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wide">Total spent</p>
@@ -326,7 +327,7 @@ export default function GroupDetail() {
               <p className="text-xs text-gray-400 uppercase tracking-wide">Expenses</p>
               <p className="text-lg font-bold text-gray-900">{nonSettlements.length}</p>
             </div>
-            {balances.length >= 0 && yourNetBalance !== 0 && (
+            {balancesLoaded && yourNetBalance !== 0 && (
               <div className="ml-auto">
                 <p className="text-xs text-gray-400 uppercase tracking-wide">Your balance</p>
                 <p className={`text-lg font-bold ${yourNetBalance > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -334,7 +335,7 @@ export default function GroupDetail() {
                 </p>
               </div>
             )}
-            {yourNetBalance === 0 && !expensesLoading && (
+            {balancesLoaded && yourNetBalance === 0 && nonSettlements.length > 0 && (
               <div className="ml-auto">
                 <span className="text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
                   All settled up ✓
@@ -346,7 +347,7 @@ export default function GroupDetail() {
       )}
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-100 px-6">
+      <div className="bg-violet-50 border-b border-violet-100 px-6">
         <nav className="flex gap-6 max-w-3xl mx-auto">
           {(['expenses', 'balances', 'members'] as Tab[]).map((tab) => (
             <button
