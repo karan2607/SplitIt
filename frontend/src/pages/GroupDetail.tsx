@@ -14,6 +14,17 @@ import { SkeletonExpenseCard } from '../components/Skeleton'
 
 type Tab = 'expenses' | 'balances' | 'members'
 
+const CARD_COLORS = [
+  'bg-orange-50 border-orange-200',
+  'bg-rose-50 border-rose-200',
+  'bg-sky-50 border-sky-200',
+  'bg-emerald-50 border-emerald-200',
+  'bg-amber-50 border-amber-200',
+  'bg-teal-50 border-teal-200',
+  'bg-pink-50 border-pink-200',
+  'bg-indigo-50 border-indigo-200',
+]
+
 const inviteSchema = z.object({
   emails: z.string().min(1, 'Enter at least one email address'),
 })
@@ -317,7 +328,7 @@ export default function GroupDetail() {
 
       {/* Summary bar */}
       {!expensesLoading && (
-        <div className="bg-violet-50 border-b border-violet-100 px-6 py-4">
+        <div className="bg-violet-200/60 border-b border-violet-300/50 px-6 py-4">
           <div className="max-w-3xl mx-auto flex items-center gap-6 flex-wrap">
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wide">Total spent</p>
@@ -347,7 +358,7 @@ export default function GroupDetail() {
       )}
 
       {/* Tabs */}
-      <div className="bg-violet-50 border-b border-violet-100 px-6">
+      <div className="bg-violet-200/60 border-b border-violet-300/50 px-6">
         <nav className="flex gap-6 max-w-3xl mx-auto">
           {(['expenses', 'balances', 'members'] as Tab[]).map((tab) => (
             <button
@@ -397,13 +408,13 @@ export default function GroupDetail() {
 
             {!expensesLoading && expenses.length > 0 && (
               <ul className="space-y-3">
-                {expenses.map((expense) => (
+                {expenses.map((expense, i) => (
                   <li
                     key={expense.id}
-                    className={`bg-white rounded-2xl shadow-sm border group ${
+                    className={`rounded-2xl shadow-sm border group ${
                       expense.is_settlement
-                        ? 'border-l-4 border-l-emerald-400 border-gray-100'
-                        : 'border-gray-100'
+                        ? 'border-l-4 border-l-emerald-400 bg-emerald-50 border-emerald-200'
+                        : CARD_COLORS[i % CARD_COLORS.length]
                     }`}
                   >
                     <div className="flex items-center gap-3 px-4 py-3">
@@ -480,7 +491,7 @@ export default function GroupDetail() {
             {!balancesLoading && balances.length > 0 && (
               <ul className="space-y-3">
                 {balances.map((b, i) => (
-                  <li key={i} className="bg-white border border-gray-100 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 shadow-sm">
+                  <li key={i} className={`${CARD_COLORS[i % CARD_COLORS.length]} rounded-2xl px-5 py-4 flex items-center justify-between gap-4 shadow-sm border`}>
                     <div className="flex items-center gap-3">
                       <Avatar user={b.from_user} size="sm" />
                       <div>
@@ -513,10 +524,10 @@ export default function GroupDetail() {
           <div>
             <InviteForm groupId={id!} onSuccess={refetch} />
             <ul className="space-y-3">
-              {group.members.map((member) => (
+              {group.members.map((member, i) => (
                 <li
                   key={member.id}
-                  className="bg-white border border-gray-100 rounded-2xl px-5 py-3 flex items-center justify-between shadow-sm"
+                  className={`${CARD_COLORS[i % CARD_COLORS.length]} border rounded-2xl px-5 py-3 flex items-center justify-between shadow-sm`}
                 >
                   <div className="flex items-center gap-3">
                     <Avatar user={member.user} size="sm" />

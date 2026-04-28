@@ -17,6 +17,35 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
+const GROUP_COLORS = [
+  { bg: 'bg-orange-50', border: 'border-orange-200', hover: 'hover:border-orange-400', badge: 'bg-orange-100 text-orange-700' },
+  { bg: 'bg-rose-50',   border: 'border-rose-200',   hover: 'hover:border-rose-400',   badge: 'bg-rose-100 text-rose-700' },
+  { bg: 'bg-sky-50',    border: 'border-sky-200',    hover: 'hover:border-sky-400',    badge: 'bg-sky-100 text-sky-700' },
+  { bg: 'bg-emerald-50',border: 'border-emerald-200',hover: 'hover:border-emerald-400',badge: 'bg-emerald-100 text-emerald-700' },
+  { bg: 'bg-amber-50',  border: 'border-amber-200',  hover: 'hover:border-amber-400',  badge: 'bg-amber-100 text-amber-700' },
+  { bg: 'bg-teal-50',   border: 'border-teal-200',   hover: 'hover:border-teal-400',   badge: 'bg-teal-100 text-teal-700' },
+  { bg: 'bg-pink-50',   border: 'border-pink-200',   hover: 'hover:border-pink-400',   badge: 'bg-pink-100 text-pink-700' },
+  { bg: 'bg-indigo-50', border: 'border-indigo-200', hover: 'hover:border-indigo-400', badge: 'bg-indigo-100 text-indigo-700' },
+]
+
+const HOW_IT_WORKS = [
+  {
+    icon: '👥',
+    title: 'Create a group',
+    desc: 'Barcelona trip, apartment bills, dinner with friends — any shared expense.',
+  },
+  {
+    icon: '🧾',
+    title: 'Add expenses',
+    desc: 'Log who paid what. Split equally or set custom percentages per person.',
+  },
+  {
+    icon: '💸',
+    title: 'Settle up',
+    desc: "See exactly who owes who and record payments when you're square.",
+  },
+]
+
 function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreated: (g: Group) => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -64,18 +93,10 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
             </p>
           )}
           <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50 transition-colors"
-            >
+            <button type="button" onClick={onClose} className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50 transition-colors">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
-            >
+            <button type="submit" disabled={isSubmitting} className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors">
               {isSubmitting ? 'Creating...' : 'Create group'}
             </button>
           </div>
@@ -104,8 +125,11 @@ export default function Dashboard() {
     navigate(`/groups/${group.id}`)
   }
 
+  const firstName = user?.name?.split(' ')[0] ?? 'there'
+
   return (
     <div className="min-h-screen bg-violet-50">
+      {/* Header */}
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center justify-between shadow-md">
         <h1 className="text-xl font-bold text-white tracking-tight">SplitIt</h1>
         <div className="flex items-center gap-3">
@@ -115,24 +139,67 @@ export default function Dashboard() {
               {user?.name}
             </span>
           </Link>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-white/60 hover:text-white transition-colors ml-1"
-          >
+          <button onClick={handleLogout} className="text-sm text-white/60 hover:text-white transition-colors ml-1">
             Log out
           </button>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Your groups</h2>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            + New group
-          </button>
+
+        {/* Welcome */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Welcome back, {firstName}! 👋
+          </h2>
+          <p className="text-gray-500 mt-1">
+            {isLoading
+              ? 'Loading your groups…'
+              : groups.length > 0
+                ? `You're in ${groups.length} ${groups.length === 1 ? 'group' : 'groups'}. Track expenses and settle up easily.`
+                : 'Create your first group to start splitting expenses with friends.'}
+          </p>
+        </div>
+
+        {/* How it works — shown only when no groups */}
+        {!isLoading && !error && groups.length === 0 && (
+          <div className="mb-8 bg-white rounded-2xl border border-violet-100 shadow-sm p-6">
+            <h3 className="font-semibold text-gray-900 mb-5">How SplitIt works</h3>
+            <div className="space-y-5">
+              {HOW_IT_WORKS.map((step, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center text-xl flex-shrink-0">
+                    {step.icon}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{step.title}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="mt-6 w-full bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-xl py-2.5 text-sm transition-colors"
+            >
+              Create your first group →
+            </button>
+          </div>
+        )}
+
+        {/* Groups section */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-900">
+            {groups.length > 0 ? 'Your groups' : ''}
+          </h3>
+          {groups.length > 0 && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              + New group
+            </button>
+          )}
         </div>
 
         {isLoading && (
@@ -145,40 +212,31 @@ export default function Dashboard() {
           <p className="text-sm text-red-500 text-center py-12">{error}</p>
         )}
 
-        {!isLoading && !error && groups.length === 0 && (
-          <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-2xl">
-            <p className="text-gray-500 mb-3">No groups yet</p>
-            <button
-              onClick={() => setShowModal(true)}
-              className="text-violet-600 hover:underline text-sm font-medium"
-            >
-              Create your first group
-            </button>
-          </div>
-        )}
-
         {!isLoading && groups.length > 0 && (
           <ul className="space-y-3">
-            {groups.map((group) => (
-              <li key={group.id}>
-                <button
-                  onClick={() => navigate(`/groups/${group.id}`)}
-                  className="w-full text-left bg-white border border-gray-100 rounded-2xl px-5 py-4 hover:border-violet-200 hover:shadow-md transition-all shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900">{group.name}</p>
-                      {group.description && (
-                        <p className="text-sm text-gray-500 mt-0.5">{group.description}</p>
-                      )}
+            {groups.map((group, i) => {
+              const color = GROUP_COLORS[i % GROUP_COLORS.length]
+              return (
+                <li key={group.id}>
+                  <button
+                    onClick={() => navigate(`/groups/${group.id}`)}
+                    className={`w-full text-left ${color.bg} border ${color.border} ${color.hover} rounded-2xl px-5 py-4 hover:shadow-md transition-all shadow-sm`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900">{group.name}</p>
+                        {group.description && (
+                          <p className="text-sm text-gray-500 mt-0.5">{group.description}</p>
+                        )}
+                      </div>
+                      <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${color.badge}`}>
+                        {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2.5 py-1">
-                      {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
-                    </span>
-                  </div>
-                </button>
-              </li>
-            ))}
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </main>
