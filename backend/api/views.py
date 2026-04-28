@@ -506,7 +506,7 @@ def receipt_scan(request):
         'generationConfig': {'response_mime_type': 'application/json'},
     }).encode()
 
-    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}'
+    url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={api_key}'
     req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
 
     try:
