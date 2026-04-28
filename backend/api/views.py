@@ -169,7 +169,7 @@ def groups(request):
     if request.method == 'GET':
         group_list = (
             Group.objects
-            .filter(members__user=request.user)
+            .filter(pk__in=GroupMember.objects.filter(user=request.user).values('group_id'))
             .annotate(**{'members__count': Count('members')})
             .select_related('created_by')
         )
