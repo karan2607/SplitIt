@@ -10,6 +10,7 @@ import { getErrorMessage } from '../lib/errors'
 import { useToast } from '../components/Toast'
 import Avatar from '../components/Avatar'
 import { SkeletonGroupCard } from '../components/Skeleton'
+import ConfirmModal from '../components/ConfirmModal'
 
 const schema = z.object({
   name: z.string().min(1, 'Group name is required').max(100),
@@ -45,6 +46,59 @@ const HOW_IT_WORKS = [
     desc: "See exactly who owes who and record payments when you're square.",
   },
 ]
+
+const editGroupSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+  description: z.string().max(255).optional(),
+})
+type EditGroupFormData = z.infer<typeof editGroupSchema>
+
+function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: () => void; onSaved: () => void }) {
+  const [serverError, setServerError] = useState<string | null>(null)
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<EditGroupFormData>({
+    resolver: zodResolver(editGroupSchema),
+    defaultValues: { name: group.name, description: group.description ?? '' },
+  })
+
+  async function onSubmit(data: EditGroupFormData) {
+    setServerError(null)
+    try {
+      await api.groups.update(group.id, { name: data.name, description: data.description || '' })
+      onSaved()
+    } catch (err) {
+      setServerError(getErrorMessage(err))
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+      <div className="bg-violet-50 rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Edit group</h2>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">✕</button>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Group name</label>
+            <input {...register('name')} autoFocus className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+            <input {...register('description')} placeholder="What's this group for?" className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          </div>
+          {serverError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{serverError}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm hover:bg-gray-50 transition-colors">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors">
+              {isSubmitting ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreated: (g: Group) => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
@@ -111,6 +165,8 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { groups, isLoading, error, refetch } = useGroups()
   const [showModal, setShowModal] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null)
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null)
   const { showToast } = useToast()
 
   function handleLogout() {
@@ -217,23 +273,33 @@ export default function Dashboard() {
             {groups.map((group, i) => {
               const color = GROUP_COLORS[i % GROUP_COLORS.length]
               return (
-                <li key={group.id}>
-                  <button
-                    onClick={() => navigate(`/groups/${group.id}`)}
-                    className={`w-full text-left ${color.bg} border ${color.border} ${color.hover} rounded-2xl px-5 py-4 hover:shadow-md transition-all shadow-sm`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-gray-900">{group.name}</p>
-                        {group.description && (
-                          <p className="text-sm text-gray-500 mt-0.5">{group.description}</p>
-                        )}
-                      </div>
-                      <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${color.badge}`}>
+                <li key={group.id} className="relative group/card">
+                  <div className={`${color.bg} border ${color.border} rounded-2xl shadow-sm hover:shadow-md transition-all`}>
+                    <button
+                      onClick={() => navigate(`/groups/${group.id}`)}
+                      className="w-full text-left px-5 py-4 pr-20"
+                    >
+                      <p className="font-semibold text-gray-900">{group.name}</p>
+                      {group.description && (
+                        <p className="text-sm text-gray-500 mt-0.5">{group.description}</p>
+                      )}
+                      <span className={`inline-block text-xs font-medium rounded-full px-2.5 py-1 mt-2 ${color.badge}`}>
                         {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
                       </span>
-                    </div>
-                  </button>
+                    </button>
+                  </div>
+                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setEditingGroup(group)}
+                      className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-violet-600 transition-colors"
+                      aria-label="Edit group"
+                    >✎</button>
+                    <button
+                      onClick={() => setDeletingGroup(group)}
+                      className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-rose-500 transition-colors text-lg leading-none"
+                      aria-label="Delete group"
+                    >×</button>
+                  </div>
                 </li>
               )
             })}
@@ -243,6 +309,32 @@ export default function Dashboard() {
 
       {showModal && (
         <CreateGroupModal onClose={() => setShowModal(false)} onCreated={handleCreated} />
+      )}
+
+      {editingGroup && (
+        <EditGroupModal
+          group={editingGroup}
+          onClose={() => setEditingGroup(null)}
+          onSaved={() => {
+            refetch()
+            setEditingGroup(null)
+            showToast('Group updated')
+          }}
+        />
+      )}
+
+      {deletingGroup && (
+        <ConfirmModal
+          title="Delete group?"
+          message={`"${deletingGroup.name}" and all its expenses will be permanently deleted. This cannot be undone.`}
+          onConfirm={async () => {
+            await api.groups.delete(deletingGroup.id)
+            setDeletingGroup(null)
+            refetch()
+            showToast('Group deleted', 'info')
+          }}
+          onClose={() => setDeletingGroup(null)}
+        />
       )}
     </div>
   )

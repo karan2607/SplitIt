@@ -11,6 +11,7 @@ import AddExpenseForm from '../components/AddExpenseForm'
 import { useToast } from '../components/Toast'
 import Avatar from '../components/Avatar'
 import { SkeletonExpenseCard } from '../components/Skeleton'
+import ConfirmModal from '../components/ConfirmModal'
 
 type Tab = 'expenses' | 'balances' | 'members'
 
@@ -307,6 +308,7 @@ export default function GroupDetail() {
   const [balancesLoading, setBalancesLoading] = useState(true)
   const [balancesLoaded, setBalancesLoaded] = useState(false)
   const [settlingBalance, setSettlingBalance] = useState<Balance | null>(null)
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -537,17 +539,19 @@ export default function GroupDetail() {
                               </span>
                             )}
                           </p>
-                          {expense.created_by.id === user?.id && (
+                          {(expense.created_by.id === user?.id || isAdmin) && (
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {expense.created_by.id === user?.id && (
+                                <button
+                                  onClick={() => setEditingExpense(expense)}
+                                  className="text-gray-400 hover:text-violet-500 transition-colors text-sm leading-none"
+                                  aria-label="Edit expense"
+                                >
+                                  ✎
+                                </button>
+                              )}
                               <button
-                                onClick={() => setEditingExpense(expense)}
-                                className="text-gray-400 hover:text-violet-500 transition-colors text-sm leading-none"
-                                aria-label="Edit expense"
-                              >
-                                ✎
-                              </button>
-                              <button
-                                onClick={() => handleDeleteExpense(expense.id)}
+                                onClick={() => setDeletingExpense(expense)}
                                 className="text-gray-400 hover:text-rose-500 transition-colors text-lg leading-none"
                                 aria-label="Delete expense"
                               >
@@ -681,6 +685,18 @@ export default function GroupDetail() {
             setShowEditGroup(false)
             showToast('Group updated')
           }}
+        />
+      )}
+
+      {deletingExpense && (
+        <ConfirmModal
+          title="Delete expense?"
+          message={`"${deletingExpense.description}" will be permanently deleted.`}
+          onConfirm={async () => {
+            await handleDeleteExpense(deletingExpense.id)
+            setDeletingExpense(null)
+          }}
+          onClose={() => setDeletingExpense(null)}
         />
       )}
     </div>
