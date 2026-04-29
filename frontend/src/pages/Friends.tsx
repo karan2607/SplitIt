@@ -139,7 +139,7 @@ export default function Friends() {
   const knownIds = new Set(friendships.map((f) => f.other.id))
 
   return (
-    <div className="min-h-screen bg-violet-50">
+    <div className="min-h-screen bg-slate-100">
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
         <button
           onClick={() => navigate('/dashboard')}
@@ -154,7 +154,7 @@ export default function Friends() {
       <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
 
         {/* Search */}
-        <div className="bg-violet-100/60 border border-violet-200 rounded-2xl shadow-sm p-6">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-3">Find people</h2>
           <div className="relative">
             <input
@@ -162,7 +162,7 @@ export default function Friends() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or @username"
-              className="w-full border border-violet-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {searching && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Searching…</span>
@@ -210,7 +210,7 @@ export default function Friends() {
 
         {/* Incoming requests */}
         {incomingPending.length > 0 && (
-          <div className="bg-violet-100/60 border border-violet-200 rounded-2xl shadow-sm p-6">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-3">
               Friend requests
               <span className="ml-2 text-xs bg-violet-600 text-white rounded-full px-2 py-0.5">
@@ -240,7 +240,7 @@ export default function Friends() {
                       <button
                         onClick={() => handleDecline(f.id)}
                         disabled={pendingAction === f.id}
-                        className="text-xs border border-gray-300 bg-white/70 text-gray-600 hover:bg-white disabled:opacity-50 font-medium px-3 py-1.5 rounded-lg transition-colors"
+                        className="text-xs border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 font-medium px-3 py-1.5 rounded-lg transition-colors"
                       >
                         Decline
                       </button>
@@ -253,7 +253,7 @@ export default function Friends() {
         )}
 
         {/* Friends list */}
-        <div className="bg-violet-100/60 border border-violet-200 rounded-2xl shadow-sm p-6">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-3">
             Your friends
             {accepted.length > 0 && (
@@ -308,7 +308,7 @@ export default function Friends() {
 
         {/* Outgoing pending */}
         {outgoingPending.length > 0 && (
-          <div className="bg-violet-100/60 border border-violet-200 rounded-2xl shadow-sm p-6">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-500 text-sm mb-3">Sent requests</h2>
             <ul className="space-y-2">
               {outgoingPending.map((f, i) => {

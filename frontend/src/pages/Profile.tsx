@@ -112,7 +112,7 @@ export default function Profile() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-violet-50">
+    <div className="min-h-screen bg-slate-100">
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
         <button
           onClick={() => navigate('/dashboard')}
@@ -126,7 +126,7 @@ export default function Profile() {
 
       <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
         {/* Account info */}
-        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6 flex items-center gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center gap-4">
           <div className="relative">
             <Avatar user={{ ...user, avatar_url: selectedAvatar || null }} size="lg" />
             {savingAvatar && (
@@ -145,7 +145,7 @@ export default function Profile() {
         </div>
 
         {/* Avatar picker */}
-        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Choose avatar</h2>
           <AvatarPicker
             selected={selectedAvatar || null}
@@ -154,7 +154,7 @@ export default function Profile() {
         </div>
 
         {/* Username */}
-        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-1">Username</h2>
           <p className="text-xs text-gray-400 mb-4">Others can find you by searching your username</p>
           <form onSubmit={usernameForm.handleSubmit(handleUsernameSubmit)} noValidate className="space-y-4">
@@ -188,7 +188,7 @@ export default function Profile() {
         </div>
 
         {/* Edit name */}
-        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Edit name</h2>
           <form onSubmit={nameForm.handleSubmit(handleNameSubmit)} noValidate className="space-y-4">
             <div>
@@ -218,7 +218,7 @@ export default function Profile() {
         </div>
 
         {/* Change password */}
-        <div className="bg-white rounded-2xl shadow-sm border border-violet-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Change password</h2>
           <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)} noValidate className="space-y-4">
             <div>

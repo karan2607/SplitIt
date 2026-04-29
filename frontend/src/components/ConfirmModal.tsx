@@ -22,7 +22,7 @@ export default function ConfirmModal({ title, message, confirmLabel = 'Delete', 
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-      <div className="bg-violet-50 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">{title}</h2>
         <p className="text-sm text-gray-500 mb-6">{message}</p>
         <div className="flex gap-3">

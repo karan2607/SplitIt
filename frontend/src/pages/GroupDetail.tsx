@@ -62,7 +62,7 @@ function EditGroupModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-      <div className="bg-violet-50 rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Edit group</h2>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors" aria-label="Close">✕</button>
@@ -172,7 +172,7 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
   }
 
   return (
-    <div className="bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 mb-4 shadow-sm space-y-4">
+    <div className="bg-white border border-gray-200 rounded-2xl px-5 py-4 mb-4 shadow-sm space-y-4">
       {/* Invite link */}
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">Share invite link</p>
@@ -180,12 +180,12 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
           type="button"
           onClick={handleGenerateLink}
           disabled={generatingLink}
-          className="w-full border border-violet-300 bg-white text-violet-600 hover:bg-violet-100 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="w-full border border-gray-300 bg-white text-violet-600 hover:bg-gray-50 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           {generatingLink ? 'Generating…' : '🔗 Generate invite link'}
         </button>
         {inviteLink && (
-          <div className="flex items-center gap-2 mt-2 bg-white border border-violet-200 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 mt-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
             <span className="text-xs text-gray-600 flex-1 truncate">{inviteLink}</span>
             <button
               type="button"
@@ -207,7 +207,7 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name or @username"
-          className="w-full border border-violet-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
         {searching && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Searching…</span>
@@ -221,7 +221,7 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
       {results.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {results.map((u) => (
-            <li key={u.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-violet-100 last:border-0">
+            <li key={u.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-gray-100 last:border-0">
               <div className="flex items-center gap-2">
                 <Avatar user={u} size="sm" />
                 <div>
@@ -522,7 +522,7 @@ export default function GroupDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-violet-50">
+      <div className="min-h-screen bg-slate-100">
         <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
           <button onClick={() => navigate('/dashboard')} className="text-white/60 hover:text-white transition-colors text-lg leading-none" aria-label="Back">←</button>
           <div className="h-6 w-32 bg-white/20 rounded animate-pulse" />
@@ -548,7 +548,7 @@ export default function GroupDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-violet-50">
+    <div className="min-h-screen bg-slate-100">
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
         <button
           onClick={() => navigate('/dashboard')}
@@ -578,7 +578,7 @@ export default function GroupDetail() {
 
       {/* Summary bar */}
       {!expensesLoading && (
-        <div className="bg-violet-200/60 border-b border-violet-300/50 px-6 py-4">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="max-w-3xl mx-auto flex items-center gap-6 flex-wrap">
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wide">Total spent</p>
@@ -608,7 +608,7 @@ export default function GroupDetail() {
       )}
 
       {/* Tabs */}
-      <div className="bg-violet-200/60 border-b border-violet-300/50 px-6">
+      <div className="bg-white border-b border-gray-200 px-6">
         <nav className="flex gap-6 max-w-3xl mx-auto">
           {(['expenses', 'balances', 'members', 'activity'] as Tab[]).map((tab) => (
             <button

@@ -84,7 +84,7 @@ export default function AvatarPicker({ selected, onSelect }: Props) {
               <img
                 src={char.image}
                 alt={char.name}
-                className="w-full aspect-square object-cover bg-violet-50"
+                className="w-full aspect-square object-cover bg-gray-100"
                 loading="lazy"
               />
               {isSelected && (

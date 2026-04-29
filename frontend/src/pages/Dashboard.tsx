@@ -72,7 +72,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-      <div className="bg-violet-50 rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Edit group</h2>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">✕</button>
@@ -118,7 +118,7 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-      <div className="bg-violet-50 rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">New Group</h2>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
@@ -195,7 +195,7 @@ export default function Dashboard() {
   const firstName = user?.name?.split(' ')[0] ?? 'there'
 
   return (
-    <div className="min-h-screen bg-violet-50">
+    <div className="min-h-screen bg-slate-100">
       {/* Header */}
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center justify-between shadow-md">
         <h1 className="text-xl font-bold text-white tracking-tight">SplitIt</h1>
@@ -238,12 +238,12 @@ export default function Dashboard() {
 
         {/* How it works — shown only when no groups */}
         {!isLoading && !error && groups.length === 0 && (
-          <div className="mb-8 bg-white rounded-2xl border border-violet-100 shadow-sm p-6">
+          <div className="mb-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-5">How SplitIt works</h3>
             <div className="space-y-5">
               {HOW_IT_WORKS.map((step, i) => (
                 <div key={i} className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center text-xl flex-shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-600/10 flex items-center justify-center text-xl flex-shrink-0">
                     {step.icon}
                   </div>
                   <div>
