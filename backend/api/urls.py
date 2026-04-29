@@ -22,6 +22,10 @@ urlpatterns = [
     path('groups/', views.groups, name='groups'),
     path('groups/<uuid:pk>/', views.group_detail, name='group-detail'),
     path('groups/<uuid:pk>/members/', views.group_add_member, name='group-add-member'),
+    path('groups/<uuid:group_pk>/invite-link/', views.invite_link_create, name='invite-link-create'),
+    # Invite accept
+    path('invite/<str:token>/', views.invite_detail, name='invite-detail'),
+    path('invite/<str:token>/accept/', views.invite_accept, name='invite-accept'),
     # Expenses
     path('groups/<uuid:group_pk>/expenses/', views.expenses, name='expenses'),
     path('groups/<uuid:group_pk>/expenses/<uuid:expense_pk>/', views.expense_detail, name='expense-detail'),

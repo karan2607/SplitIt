@@ -7,13 +7,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Group, GroupMember, Expense, ExpenseSplit, PasswordResetToken, Friendship
+from .models import Group, GroupMember, GroupInvite, Expense, ExpenseSplit, PasswordResetToken, Friendship
 from .balance import compute_balances
 from .serializers import (
     RegisterSerializer,
     UserSerializer,
     GroupSerializer,
     GroupListSerializer,
+    GroupInviteSerializer,
     FriendshipSerializer,
     ExpenseSerializer,
     ExpenseCreateSerializer,
@@ -234,6 +235,48 @@ def group_detail(request, pk):
     # DELETE
     group.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------
+# Invite links (shareable, no email required)
+# ---------------------------------------------------------------------------
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsGroupMember])
+def invite_link_create(request, group_pk):
+    """Create a shareable invite link not tied to a specific email."""
+    group = get_object_or_404(Group, pk=group_pk)
+    frontend_base = request.data.get('frontend_base', 'http://localhost:5173')
+    invite = GroupInvite.objects.create(
+        group=group,
+        invited_email='',
+        invited_by=request.user,
+    )
+    data = GroupInviteSerializer(invite).data
+    data['url'] = f"{frontend_base}/invite/{invite.token}"
+    return Response(data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def invite_detail(request, token):
+    invite = get_object_or_404(GroupInvite, token=token)
+    data = GroupInviteSerializer(invite).data
+    data['is_valid'] = invite.is_valid
+    return Response(data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def invite_accept(request, token):
+    invite = get_object_or_404(GroupInvite, token=token)
+    if not invite.is_valid:
+        return Response({'detail': 'This invite link has expired or already been used.'}, status=status.HTTP_400_BAD_REQUEST)
+    GroupMember.objects.get_or_create(group=invite.group, user=request.user, defaults={'role': 'member'})
+    from django.utils import timezone
+    invite.used_at = timezone.now()
+    invite.save(update_fields=['used_at'])
+    return Response(GroupSerializer(invite.group).data)
 
 
 # ---------------------------------------------------------------------------

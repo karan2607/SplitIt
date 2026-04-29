@@ -13,7 +13,7 @@ import Avatar from '../components/Avatar'
 import { SkeletonExpenseCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
 
-type Tab = 'expenses' | 'balances' | 'members'
+type Tab = 'expenses' | 'balances' | 'members' | 'activity'
 
 const CARD_COLORS = [
   'bg-orange-50 border-orange-200',
@@ -114,6 +114,9 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
   const [searching, setSearching] = useState(false)
   const [pendingAdd, setPendingAdd] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [generatingLink, setGeneratingLink] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { showToast } = useToast()
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -130,6 +133,27 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
     }, 350)
     return () => { if (timer.current) clearTimeout(timer.current) }
   }, [query])
+
+  async function handleGenerateLink() {
+    setGeneratingLink(true)
+    try {
+      const invite = await api.groups.generateLink(groupId)
+      setInviteLink(invite.url ?? `${window.location.origin}/invite/${invite.token}`)
+    } catch (err) {
+      showToast(getErrorMessage(err), 'error')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  function handleCopyLink() {
+    if (!inviteLink) return
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setCopied(true)
+      showToast('Link copied to clipboard', 'info')
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   async function handleAdd(userId: string, name: string) {
     setPendingAdd(userId)
@@ -148,9 +172,36 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
   }
 
   return (
-    <div className="bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 mb-4 shadow-sm">
-      <p className="text-sm font-medium text-gray-700 mb-3">Add people</p>
-      <div className="relative">
+    <div className="bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 mb-4 shadow-sm space-y-4">
+      {/* Invite link */}
+      <div>
+        <p className="text-sm font-medium text-gray-700 mb-2">Share invite link</p>
+        <button
+          type="button"
+          onClick={handleGenerateLink}
+          disabled={generatingLink}
+          className="w-full border border-violet-300 bg-white text-violet-600 hover:bg-violet-100 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          {generatingLink ? 'Generating…' : '🔗 Generate invite link'}
+        </button>
+        {inviteLink && (
+          <div className="flex items-center gap-2 mt-2 bg-white border border-violet-200 rounded-lg px-3 py-2">
+            <span className="text-xs text-gray-600 flex-1 truncate">{inviteLink}</span>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="text-xs font-medium text-violet-600 hover:text-violet-800 whitespace-nowrap shrink-0"
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Direct add by search */}
+      <div>
+        <p className="text-sm font-medium text-gray-700 mb-2">Or add directly</p>
+        <div className="relative">
         <input
           type="text"
           value={query}
@@ -194,7 +245,8 @@ function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
         </ul>
       )}
 
-      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+        {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+      </div>
     </div>
   )
 }
@@ -276,6 +328,118 @@ function SettleModal({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Activity feed — derived from expenses + member joins, no extra API calls
+// ---------------------------------------------------------------------------
+
+type ActivityItem =
+  | { kind: 'expense'; id: string; actor: import('../lib/api').User; label: string; sub: string; date: string; isSettlement: boolean }
+  | { kind: 'join'; id: string; actor: import('../lib/api').GroupMember['user']; label: string; date: string }
+
+function ActivityFeed({
+  expenses,
+  members,
+  isLoading,
+}: {
+  expenses: import('../lib/api').Expense[]
+  members: import('../lib/api').GroupMember[]
+  isLoading: boolean
+}) {
+  const items: ActivityItem[] = [
+    ...expenses.map((e): ActivityItem => {
+      const otherPerson = e.is_settlement && e.splits[0]
+        ? ` → ${e.splits[0].user.name}`
+        : ''
+      return {
+        kind: 'expense',
+        id: e.id,
+        actor: e.created_by,
+        label: e.is_settlement
+          ? `Settled $${e.amount}${otherPerson}`
+          : `Added "${e.description}" — $${e.amount}`,
+        sub: e.is_settlement ? 'Settlement' : `Paid by ${e.paid_by.name}`,
+        date: e.created_at,
+        isSettlement: e.is_settlement,
+      }
+    }),
+    ...members.map((m): ActivityItem => ({
+      kind: 'join',
+      id: m.id,
+      actor: m.user,
+      label: 'Joined the group',
+      date: m.joined_at,
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex gap-3 animate-pulse">
+            <div className="w-7 h-7 rounded-full bg-gray-200 shrink-0 mt-0.5" />
+            <div className="flex-1 space-y-1.5 pt-1">
+              <div className="h-3.5 w-48 bg-gray-200 rounded" />
+              <div className="h-3 w-24 bg-gray-200 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-2xl">
+        <p className="text-gray-500">No activity yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <ul className="space-y-1">
+      {items.map((item, i) => (
+        <li key={item.id} className="flex gap-3 py-3 border-b border-gray-100 last:border-0">
+          <div className="shrink-0 mt-0.5">
+            <Avatar user={item.actor} size="sm" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-gray-900">
+              <span className="font-medium">{item.actor.name}</span>
+              {' '}
+              <span className={item.kind === 'join' ? 'text-gray-500' : item.isSettlement ? 'text-emerald-700' : 'text-gray-700'}>
+                {item.label}
+              </span>
+            </p>
+            {'sub' in item && (
+              <p className="text-xs text-gray-400 mt-0.5">{item.sub}</p>
+            )}
+            <p className="text-xs text-gray-400 mt-0.5">
+              {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {' · '}
+              {new Date(item.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </p>
+          </div>
+          {item.kind === 'join' && (
+            <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5 self-start mt-0.5 shrink-0">
+              joined
+            </span>
+          )}
+          {item.kind === 'expense' && item.isSettlement && (
+            <span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 self-start mt-0.5 shrink-0">
+              settled
+            </span>
+          )}
+          {item.kind === 'expense' && !item.isSettlement && (
+            <span className={`text-xs rounded-full px-2 py-0.5 self-start mt-0.5 shrink-0 ${CARD_COLORS[i % CARD_COLORS.length].replace('bg-', 'bg-').split(' ')[0]} text-gray-600 border ${CARD_COLORS[i % CARD_COLORS.length].split(' ')[1]}`}>
+              expense
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default function GroupDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -310,16 +474,23 @@ export default function GroupDetail() {
       .finally(() => setBalancesLoading(false))
   }, [id])
 
+  function refreshBalances() {
+    if (!id) return
+    api.balances.list(id).then((res) => { setBalances(res.balances); setBalancesLoaded(true) })
+  }
+
   function handleExpenseCreated(expense: Expense) {
     setExpenses((prev) => [expense, ...prev])
     setShowAddExpense(false)
     showToast('Expense added')
+    refreshBalances()
   }
 
   function handleExpenseUpdated(updated: Expense) {
     setExpenses((prev) => prev.map((e) => (e.id === updated.id ? updated : e)))
     setEditingExpense(null)
     showToast('Expense updated')
+    refreshBalances()
   }
 
   function handleSettled(expense: Expense) {
@@ -335,6 +506,7 @@ export default function GroupDetail() {
     await api.expenses.delete(id!, expenseId)
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId))
     showToast('Expense deleted', 'info')
+    refreshBalances()
   }
 
   const isAdmin = group?.members.some((m) => m.user.id === user?.id && m.role === 'admin') ?? false
@@ -438,7 +610,7 @@ export default function GroupDetail() {
       {/* Tabs */}
       <div className="bg-violet-200/60 border-b border-violet-300/50 px-6">
         <nav className="flex gap-6 max-w-3xl mx-auto">
-          {(['expenses', 'balances', 'members'] as Tab[]).map((tab) => (
+          {(['expenses', 'balances', 'members', 'activity'] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -634,6 +806,10 @@ export default function GroupDetail() {
               ))}
             </ul>
           </div>
+        )}
+
+        {activeTab === 'activity' && (
+          <ActivityFeed expenses={expenses} members={group.members} isLoading={expensesLoading} />
         )}
       </main>
 

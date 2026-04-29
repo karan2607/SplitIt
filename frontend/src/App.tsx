@@ -10,6 +10,7 @@ import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import GroupDetail from './pages/GroupDetail'
 import Friends from './pages/Friends'
+import InviteAccept from './pages/InviteAccept'
 import Profile from './pages/Profile'
 import { ToastProvider } from './components/Toast'
 
@@ -126,6 +127,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Invite accept — public so non-members can land here and sign up */}
+      <Route path="/invite/:token" element={<InviteAccept />} />
       <Route
         path="/profile"
         element={

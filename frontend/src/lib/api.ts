@@ -106,6 +106,17 @@ export interface Friendship {
   created_at: string
 }
 
+export interface Invite {
+  id: string
+  group: Group
+  invited_email: string
+  invited_by: User
+  expires_at: string
+  is_valid: boolean
+  token: string
+  url?: string
+}
+
 export const api = {
   auth: {
     signup: (data: { name: string; username: string; email: string; password: string }) =>
@@ -188,6 +199,20 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ user_id: userId }),
       }),
+
+    generateLink: (groupId: string) =>
+      request<Invite>(`/api/groups/${groupId}/invite-link/`, {
+        method: 'POST',
+        body: JSON.stringify({ frontend_base: window.location.origin }),
+      }),
+  },
+
+  invites: {
+    get: (token: string) =>
+      request<Invite>(`/api/invite/${token}/`),
+
+    accept: (token: string) =>
+      request<GroupDetail>(`/api/invite/${token}/accept/`, { method: 'POST' }),
   },
 
   balances: {
