@@ -1,20 +1,20 @@
 from django.contrib.auth import get_user_model, authenticate
 from django.shortcuts import get_object_or_404
+from django.db.models import Count, Q
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Count
 
-from .models import Group, GroupMember, GroupInvite, Expense, ExpenseSplit, PasswordResetToken
+from .models import Group, GroupMember, Expense, ExpenseSplit, PasswordResetToken, Friendship
 from .balance import compute_balances
 from .serializers import (
     RegisterSerializer,
     UserSerializer,
     GroupSerializer,
     GroupListSerializer,
-    GroupInviteSerializer,
+    FriendshipSerializer,
     ExpenseSerializer,
     ExpenseCreateSerializer,
     ExpenseUpdateSerializer,
@@ -24,7 +24,7 @@ from .serializers import (
     UpdateProfileSerializer,
 )
 from .permissions import IsGroupMember
-from .email import send_invite_email, send_password_reset_email
+from .email import send_password_reset_email
 
 User = get_user_model()
 
@@ -86,6 +86,12 @@ def me(request):
         if 'name' in ser.validated_data:
             request.user.name = ser.validated_data['name']
             update_fields.append('name')
+        if 'username' in ser.validated_data:
+            new_username = ser.validated_data['username']
+            if User.objects.filter(username=new_username).exclude(pk=request.user.pk).exists():
+                return Response({'username': 'This username is already taken.'}, status=status.HTTP_400_BAD_REQUEST)
+            request.user.username = new_username
+            update_fields.append('username')
         if 'avatar_url' in ser.validated_data:
             request.user.avatar_url = ser.validated_data['avatar_url'] or None
             update_fields.append('avatar_url')
@@ -231,88 +237,108 @@ def group_detail(request, pk):
 
 
 # ---------------------------------------------------------------------------
-# Invites
+# User Search
+# ---------------------------------------------------------------------------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_search(request):
+    q = request.query_params.get('q', '').strip()
+    if len(q) < 2:
+        return Response([])
+    users = (
+        User.objects
+        .filter(Q(username__icontains=q) | Q(name__icontains=q))
+        .exclude(id=request.user.id)
+        [:20]
+    )
+    return Response(UserSerializer(users, many=True).data)
+
+
+# ---------------------------------------------------------------------------
+# Friends
+# ---------------------------------------------------------------------------
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def friends(request):
+    if request.method == 'GET':
+        friendships = (
+            Friendship.objects
+            .filter(Q(from_user=request.user) | Q(to_user=request.user))
+            .select_related('from_user', 'to_user')
+        )
+        return Response(FriendshipSerializer(friendships, many=True).data)
+
+    # POST — send friend request
+    user_id = request.data.get('user_id')
+    if not user_id:
+        return Response({'detail': 'user_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    target = get_object_or_404(User, pk=user_id)
+    if target == request.user:
+        return Response({'detail': 'You cannot add yourself.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    existing = Friendship.objects.filter(
+        Q(from_user=request.user, to_user=target) | Q(from_user=target, to_user=request.user)
+    ).first()
+    if existing:
+        msg = 'Already friends.' if existing.status == 'accepted' else 'Friend request already pending.'
+        return Response({'detail': msg}, status=status.HTTP_400_BAD_REQUEST)
+
+    friendship = Friendship.objects.create(from_user=request.user, to_user=target)
+    return Response(FriendshipSerializer(friendship).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def friend_detail(request, pk):
+    friendship = get_object_or_404(Friendship, pk=pk)
+
+    if request.user not in (friendship.from_user, friendship.to_user):
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'POST':
+        # Accept — recipient only
+        if friendship.to_user != request.user:
+            return Response({'detail': 'Only the recipient can accept a friend request.'}, status=status.HTTP_403_FORBIDDEN)
+        if friendship.status == 'accepted':
+            return Response({'detail': 'Already friends.'}, status=status.HTTP_400_BAD_REQUEST)
+        friendship.status = 'accepted'
+        friendship.save(update_fields=['status'])
+        return Response(FriendshipSerializer(friendship).data)
+
+    # DELETE — either party can remove/reject
+    friendship.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------
+# Group Members — direct add
 # ---------------------------------------------------------------------------
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated, IsGroupMember])
-def invite_create(request, group_pk):
-    group = get_object_or_404(Group, pk=group_pk)
-    emails = request.data.get('emails', [])
-    if not emails or not isinstance(emails, list):
-        return Response({'detail': 'Provide a non-empty list of emails.'}, status=status.HTTP_400_BAD_REQUEST)
+def group_add_member(request, pk):
+    group = get_object_or_404(Group, pk=pk)
 
-    frontend_base = request.data.get('frontend_base', 'http://localhost:5173')
-    created = []
-    for email in emails:
-        email = email.strip().lower()
-        if not email:
-            continue
-        # Skip if the user is already a member
-        existing_user = User.objects.filter(email=email).first()
-        if existing_user and GroupMember.objects.filter(group=group, user=existing_user).exists():
-            continue
-        invite = GroupInvite.objects.create(
-            group=group,
-            invited_email=email,
-            invited_by=request.user,
-        )
-        invite_url = f"{frontend_base}/invite/{invite.token}"
-        try:
-            send_invite_email(
-                to_email=email,
-                invited_by_name=request.user.name,
-                group_name=group.name,
-                invite_url=invite_url,
-            )
-        except Exception:
-            pass  # email failure should not block the response
-        created.append(invite)
+    user_id = request.data.get('user_id')
+    if not user_id:
+        return Response({'detail': 'user_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response(GroupInviteSerializer(created, many=True).data, status=status.HTTP_201_CREATED)
+    target = get_object_or_404(User, pk=user_id)
 
+    _, created = GroupMember.objects.get_or_create(group=group, user=target, defaults={'role': 'member'})
+    if not created:
+        return Response({'detail': f'{target.name} is already in this group.'}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsGroupMember])
-def invite_link_create(request, group_pk):
-    """Create a shareable invite link not tied to a specific email."""
-    group = get_object_or_404(Group, pk=group_pk)
-    frontend_base = request.data.get('frontend_base', 'http://localhost:5173')
-    invite = GroupInvite.objects.create(
-        group=group,
-        invited_email='',
-        invited_by=request.user,
+    group = (
+        Group.objects
+        .prefetch_related('members__user')
+        .annotate(**{'members__count': Count('members')})
+        .get(pk=pk)
     )
-    data = GroupInviteSerializer(invite).data
-    data['url'] = f"{frontend_base}/invite/{invite.token}"
-    return Response(data, status=status.HTTP_201_CREATED)
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def invite_detail(request, token):
-    invite = get_object_or_404(GroupInvite, token=token)
-    data = GroupInviteSerializer(invite).data
-    data['is_valid'] = invite.is_valid
-    return Response(data)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def invite_accept(request, token):
-    invite = get_object_or_404(GroupInvite, token=token)
-    if not invite.is_valid:
-        return Response({'detail': 'This invite link has expired or already been used.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Add the user to the group (idempotent — ignore if already a member)
-    GroupMember.objects.get_or_create(group=invite.group, user=request.user, defaults={'role': 'member'})
-
-    # Mark invite as used
-    from django.utils import timezone
-    invite.used_at = timezone.now()
-    invite.save(update_fields=['used_at'])
-
-    return Response(GroupSerializer(invite.group).data)
+    return Response(GroupSerializer(group).data)
 
 
 # ---------------------------------------------------------------------------
@@ -385,14 +411,18 @@ def expenses(request, group_pk):
 def expense_detail(request, group_pk, expense_pk):
     group = get_object_or_404(Group, pk=group_pk)
     expense = get_object_or_404(Expense, pk=expense_pk, group=group)
-
-    if expense.created_by != request.user:
-        action = 'edit' if request.method == 'PATCH' else 'delete'
-        return Response({'detail': f'Only the expense creator can {action} it.'}, status=status.HTTP_403_FORBIDDEN)
+    is_creator = expense.created_by == request.user
+    is_admin = GroupMember.objects.filter(group=group, user=request.user, role='admin').exists()
 
     if request.method == 'DELETE':
+        if not is_creator and not is_admin:
+            return Response({'detail': 'Only the expense creator or a group admin can delete it.'}, status=status.HTTP_403_FORBIDDEN)
         expense.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # PATCH — creator only
+    if not is_creator:
+        return Response({'detail': 'Only the expense creator can edit it.'}, status=status.HTTP_403_FORBIDDEN)
 
     # PATCH — partial update
     serializer = ExpenseUpdateSerializer(data=request.data, context={'group': group})

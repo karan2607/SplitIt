@@ -3,6 +3,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 export interface User {
   id: string
   name: string
+  username: string | null
   email: string
   avatar_url: string | null
   created_at: string
@@ -97,20 +98,17 @@ export interface Balance {
   amount: string
 }
 
-export interface Invite {
+export interface Friendship {
   id: string
-  group: Group
-  invited_email: string
-  invited_by: User
-  expires_at: string
-  is_valid: boolean
-  token: string
-  url?: string
+  from_user: User
+  to_user: User
+  status: 'pending' | 'accepted'
+  created_at: string
 }
 
 export const api = {
   auth: {
-    signup: (data: { name: string; email: string; password: string }) =>
+    signup: (data: { name: string; username: string; email: string; password: string }) =>
       request<AuthResponse>('/api/auth/signup/', { method: 'POST', body: JSON.stringify(data) }),
 
     login: (data: { email: string; password: string }) =>
@@ -140,11 +138,33 @@ export const api = {
         body: JSON.stringify({ current_password, new_password }),
       }),
 
-    updateProfile: (data: { name?: string; avatar_url?: string | null }) =>
+    updateProfile: (data: { name?: string; username?: string; avatar_url?: string | null }) =>
       request<User>('/api/auth/me/', {
         method: 'PATCH',
         body: JSON.stringify(data),
       }),
+  },
+
+  users: {
+    search: (q: string) =>
+      request<User[]>(`/api/users/search/?q=${encodeURIComponent(q)}`),
+  },
+
+  friends: {
+    list: () =>
+      request<Friendship[]>('/api/friends/'),
+
+    send: (userId: string) =>
+      request<Friendship>('/api/friends/', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId }),
+      }),
+
+    accept: (id: string) =>
+      request<Friendship>(`/api/friends/${id}/`, { method: 'POST' }),
+
+    remove: (id: string) =>
+      request<void>(`/api/friends/${id}/`, { method: 'DELETE' }),
   },
 
   groups: {
@@ -163,25 +183,11 @@ export const api = {
     delete: (id: string) =>
       request<void>(`/api/groups/${id}/`, { method: 'DELETE' }),
 
-    invite: (groupId: string, emails: string[]) =>
-      request<Invite[]>(`/api/groups/${groupId}/invite/`, {
+    addMember: (groupId: string, userId: string) =>
+      request<GroupDetail>(`/api/groups/${groupId}/members/`, {
         method: 'POST',
-        body: JSON.stringify({ emails, frontend_base: window.location.origin }),
+        body: JSON.stringify({ user_id: userId }),
       }),
-
-    generateLink: (groupId: string) =>
-      request<Invite>(`/api/groups/${groupId}/invite-link/`, {
-        method: 'POST',
-        body: JSON.stringify({ frontend_base: window.location.origin }),
-      }),
-  },
-
-  invites: {
-    get: (token: string) =>
-      request<Invite>(`/api/invite/${token}/`),
-
-    accept: (token: string) =>
-      request<GroupDetail>(`/api/invite/${token}/accept/`, { method: 'POST' }),
   },
 
   balances: {

@@ -189,6 +189,9 @@ export default function Dashboard() {
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center justify-between shadow-md">
         <h1 className="text-xl font-bold text-white tracking-tight">SplitIt</h1>
         <div className="flex items-center gap-3">
+          <Link to="/friends" className="text-sm text-white/70 hover:text-white transition-colors hidden sm:block">
+            Friends
+          </Link>
           <Link to="/profile" className="flex items-center gap-2 group">
             {user && <Avatar user={user} size="sm" className="ring-2 ring-white/30 group-hover:ring-white/60 transition-all" />}
             <span className="text-sm text-white/80 group-hover:text-white transition-colors hidden sm:block">

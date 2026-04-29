@@ -25,7 +25,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    username = None  # remove the username field
+    username = models.CharField(max_length=30, unique=True, null=True, blank=True)
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
     avatar_url = models.URLField(blank=True, null=True)
@@ -89,6 +89,22 @@ class GroupInvite(models.Model):
 
     def __str__(self):
         return f'Invite for {self.invited_email} to {self.group.name}'
+
+
+class Friendship(models.Model):
+    STATUS_CHOICES = [('pending', 'Pending'), ('accepted', 'Accepted')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_friend_requests')
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_friend_requests')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('from_user', 'to_user')
+
+    def __str__(self):
+        return f'{self.from_user.email} → {self.to_user.email} ({self.status})'
 
 
 class PasswordResetToken(models.Model):

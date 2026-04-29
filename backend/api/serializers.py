@@ -4,13 +4,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from .models import Group, GroupMember, GroupInvite, Expense, ExpenseSplit
+from .models import Group, GroupMember, GroupInvite, Expense, ExpenseSplit, Friendship
 
 User = get_user_model()
 
 
 class RegisterSerializer(serializers.Serializer):
     name = serializers.CharField(required=True, max_length=255)
+    username = serializers.CharField(required=True, max_length=30)
     email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True, write_only=True)
 
@@ -18,6 +19,17 @@ class RegisterSerializer(serializers.Serializer):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('A user with this email already exists.')
         return value.lower()
+
+    def validate_username(self, value):
+        import re
+        value = value.lower().strip()
+        if not re.match(r'^[a-z0-9_.-]{3,30}$', value):
+            raise serializers.ValidationError(
+                'Username must be 3–30 characters: lowercase letters, numbers, dots, underscores, or hyphens.'
+            )
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError('This username is already taken.')
+        return value
 
     def validate_password(self, value):
         validate_password(value)
@@ -28,6 +40,7 @@ class RegisterSerializer(serializers.Serializer):
             email=validated_data['email'],
             password=validated_data['password'],
             name=validated_data['name'],
+            username=validated_data['username'],
         )
 
 
@@ -47,7 +60,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'name', 'email', 'avatar_url', 'created_at']
+        fields = ['id', 'name', 'username', 'email', 'avatar_url', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -122,9 +135,28 @@ class PasswordChangeSerializer(serializers.Serializer):
         return value
 
 
+class FriendshipSerializer(serializers.ModelSerializer):
+    from_user = UserSerializer(read_only=True)
+    to_user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Friendship
+        fields = ['id', 'from_user', 'to_user', 'status', 'created_at']
+
+
 class UpdateProfileSerializer(serializers.Serializer):
     name = serializers.CharField(required=False, max_length=255)
+    username = serializers.CharField(required=False, max_length=30)
     avatar_url = serializers.URLField(required=False, allow_null=True, allow_blank=True)
+
+    def validate_username(self, value):
+        import re
+        value = value.lower().strip()
+        if not re.match(r'^[a-z0-9_.-]{3,30}$', value):
+            raise serializers.ValidationError(
+                'Username must be 3–30 characters: lowercase letters, numbers, dots, underscores, or hyphens.'
+            )
+        return value
 
 
 class CustomSplitSerializer(serializers.Serializer):

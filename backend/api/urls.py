@@ -13,14 +13,15 @@ urlpatterns = [
     path('auth/password-change/', views.password_change, name='password-change'),
     # Receipt scanner
     path('receipt/scan/', views.receipt_scan, name='receipt-scan'),
+    # Users
+    path('users/search/', views.user_search, name='user-search'),
+    # Friends
+    path('friends/', views.friends, name='friends'),
+    path('friends/<uuid:pk>/', views.friend_detail, name='friend-detail'),
     # Groups
     path('groups/', views.groups, name='groups'),
     path('groups/<uuid:pk>/', views.group_detail, name='group-detail'),
-    # Invites
-    path('groups/<uuid:group_pk>/invite/', views.invite_create, name='invite-create'),
-    path('groups/<uuid:group_pk>/invite-link/', views.invite_link_create, name='invite-link-create'),
-    path('invite/<str:token>/', views.invite_detail, name='invite-detail'),
-    path('invite/<str:token>/accept/', views.invite_accept, name='invite-accept'),
+    path('groups/<uuid:pk>/members/', views.group_add_member, name='group-add-member'),
     # Expenses
     path('groups/<uuid:group_pk>/expenses/', views.expenses, name='expenses'),
     path('groups/<uuid:group_pk>/expenses/<uuid:expense_pk>/', views.expense_detail, name='expense-detail'),

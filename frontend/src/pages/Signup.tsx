@@ -6,14 +6,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { api } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useAuth } from '../hooks/useAuth'
-import { setToken } from '../lib/auth'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Enter a valid email'),
-  password: z
+  username: z
     .string()
-    .min(8, 'Password must be at least 8 characters'),
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be 30 characters or fewer')
+    .regex(/^[a-z0-9_.-]+$/, 'Only lowercase letters, numbers, dots, underscores, or hyphens'),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 type FormData = z.infer<typeof schema>
 
@@ -33,21 +35,10 @@ export default function Signup() {
   async function onSubmit(data: FormData) {
     setServerError(null)
     try {
-      const res = await api.auth.signup(data)
-      setToken(res.token)
-
-      if (next.startsWith('/invite/')) {
-        const inviteToken = next.replace('/invite/', '')
-        try {
-          const group = await api.invites.accept(inviteToken)
-          login(res.token, res.user)
-          navigate(`/groups/${group.id}`, { replace: true })
-          return
-        } catch {
-          // invite accept failed (expired/used) — fall through to normal redirect
-        }
-      }
-
+      const res = await api.auth.signup({
+        ...data,
+        username: data.username.toLowerCase(),
+      })
       login(res.token, res.user)
       navigate(next, { replace: true })
     } catch (err) {
@@ -73,6 +64,21 @@ export default function Signup() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
+              <input
+                {...register('username')}
+                type="text"
+                placeholder="alice"
+                autoCapitalize="none"
+                className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+            {errors.username && <p className="text-xs text-red-500 mt-1">{errors.username.message}</p>}
           </div>
 
           <div>

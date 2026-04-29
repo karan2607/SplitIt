@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -104,113 +104,97 @@ function EditGroupModal({
   )
 }
 
-const inviteSchema = z.object({
-  emails: z.string().min(1, 'Enter at least one email address'),
-})
-type InviteFormData = z.infer<typeof inviteSchema>
-
-function CopyLinkRow({ url, onCopied }: { url: string; onCopied: () => void }) {
-  const [copied, setCopied] = useState(false)
-
-  function handleCopy() {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true)
-      onCopied()
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
-  return (
-    <div className="flex items-center gap-2 mt-2 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
-      <span className="text-xs text-gray-600 flex-1 truncate">{url}</span>
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="text-xs font-medium text-violet-600 hover:text-violet-800 whitespace-nowrap shrink-0"
-      >
-        {copied ? 'Copied!' : 'Copy'}
-      </button>
-    </div>
-  )
-}
-
-function InviteForm({ groupId, onSuccess }: { groupId: string; onSuccess: () => void }) {
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
+function AddMemberForm({ groupId, existingMemberIds, onAdded }: {
+  groupId: string
+  existingMemberIds: Set<string>
+  onAdded: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<import('../lib/api').User[]>([])
+  const [searching, setSearching] = useState(false)
+  const [pendingAdd, setPendingAdd] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const { showToast } = useToast()
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<InviteFormData>({
-    resolver: zodResolver(inviteSchema),
-  })
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function onSubmit(data: InviteFormData) {
-    setServerError(null)
-    const emails = data.emails.split(/[\s,]+/).map(e => e.trim()).filter(Boolean)
-    try {
-      await api.groups.invite(groupId, emails)
-      reset()
-      showToast('Invite sent!')
-      onSuccess()
-    } catch (err) {
-      setServerError(getErrorMessage(err))
-    }
-  }
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current)
+    if (query.trim().length < 2) { setResults([]); return }
+    setSearching(true)
+    timer.current = setTimeout(async () => {
+      try {
+        setResults(await api.users.search(query.trim()))
+      } finally {
+        setSearching(false)
+      }
+    }, 350)
+    return () => { if (timer.current) clearTimeout(timer.current) }
+  }, [query])
 
-  async function handleGenerateLink() {
-    setIsGenerating(true)
-    setServerError(null)
+  async function handleAdd(userId: string, name: string) {
+    setPendingAdd(userId)
+    setError(null)
     try {
-      const invite = await api.groups.generateLink(groupId)
-      setGeneratedLink(invite.url ?? `${window.location.origin}/invite/${invite.token}`)
+      await api.groups.addMember(groupId, userId)
+      showToast(`${name} added to group`)
+      onAdded()
+      setQuery('')
+      setResults([])
     } catch (err) {
-      setServerError(getErrorMessage(err))
+      setError(getErrorMessage(err))
     } finally {
-      setIsGenerating(false)
+      setPendingAdd(null)
     }
   }
 
   return (
-    <div className="bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 mb-4 space-y-3 shadow-sm">
-      <p className="text-sm font-medium text-gray-700">Invite people</p>
-
-      <div>
-        <button
-          type="button"
-          onClick={handleGenerateLink}
-          disabled={isGenerating}
-          className="w-full border border-violet-300 bg-white text-violet-600 hover:bg-violet-100 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          {isGenerating ? 'Generating...' : '🔗 Generate invite link'}
-        </button>
-        {generatedLink && (
-          <CopyLinkRow
-            url={generatedLink}
-            onCopied={() => showToast('Link copied to clipboard', 'info')}
-          />
+    <div className="bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 mb-4 shadow-sm">
+      <p className="text-sm font-medium text-gray-700 mb-3">Add people</p>
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name or @username"
+          className="w-full border border-violet-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+        />
+        {searching && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Searching…</span>
         )}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <p className="text-xs text-gray-500 mb-1">Or invite by email</p>
-        <div className="flex gap-2">
-          <input
-            {...register('emails')}
-            type="text"
-            placeholder="email@example.com, another@example.com"
-            className="flex-1 border border-violet-200 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
-          >
-            {isSubmitting ? 'Sending...' : 'Send'}
-          </button>
-        </div>
-        {errors.emails && <p className="text-xs text-red-500 mt-1">{errors.emails.message}</p>}
-      </form>
+      {query.length >= 2 && !searching && results.length === 0 && (
+        <p className="text-xs text-gray-400 mt-2">No users found for "{query}"</p>
+      )}
 
-      {serverError && <p className="text-xs text-red-500">{serverError}</p>}
+      {results.length > 0 && (
+        <ul className="mt-2 space-y-1.5">
+          {results.map((u) => (
+            <li key={u.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-violet-100 last:border-0">
+              <div className="flex items-center gap-2">
+                <Avatar user={u} size="sm" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{u.name}</p>
+                  {u.username && <p className="text-xs text-gray-400">@{u.username}</p>}
+                </div>
+              </div>
+              {existingMemberIds.has(u.id) ? (
+                <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2.5 py-1">Already in group</span>
+              ) : (
+                <button
+                  onClick={() => handleAdd(u.id, u.name)}
+                  disabled={pendingAdd === u.id}
+                  className="text-xs bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {pendingAdd === u.id ? '…' : 'Add'}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
     </div>
   )
 }
@@ -618,7 +602,11 @@ export default function GroupDetail() {
 
         {activeTab === 'members' && (
           <div>
-            <InviteForm groupId={id!} onSuccess={refetch} />
+            <AddMemberForm
+              groupId={id!}
+              existingMemberIds={new Set(group.members.map((m) => m.user.id))}
+              onAdded={refetch}
+            />
             <ul className="space-y-3">
               {group.members.map((member, i) => (
                 <li
