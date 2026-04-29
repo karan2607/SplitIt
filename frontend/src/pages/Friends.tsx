@@ -154,7 +154,7 @@ export default function Friends() {
       <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
 
         {/* Search */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+        <div className="bg-zinc-200/80 border border-zinc-300 rounded-2xl shadow-sm p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-3">Find people</h2>
           <div className="relative">
             <input
@@ -162,7 +162,7 @@ export default function Friends() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by name or @username"
-              className="w-full border border-gray-300 bg-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full border border-zinc-400 bg-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {searching && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Searching…</span>
@@ -210,7 +210,7 @@ export default function Friends() {
 
         {/* Incoming requests */}
         {incomingPending.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+          <div className="bg-zinc-200/80 border border-zinc-300 rounded-2xl shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-3">
               Friend requests
               <span className="ml-2 text-xs bg-violet-600 text-white rounded-full px-2 py-0.5">
@@ -253,7 +253,7 @@ export default function Friends() {
         )}
 
         {/* Friends list */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+        <div className="bg-zinc-200/80 border border-zinc-300 rounded-2xl shadow-sm p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-3">
             Your friends
             {accepted.length > 0 && (
@@ -264,7 +264,7 @@ export default function Friends() {
           {loadingFriends && (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="flex items-center gap-3 animate-pulse bg-gray-100 rounded-xl px-3 py-2.5">
+                <div key={i} className="flex items-center gap-3 animate-pulse bg-zinc-300/60 rounded-xl px-3 py-2.5">
                   <div className="w-7 h-7 rounded-full bg-gray-200" />
                   <div className="h-4 w-32 bg-gray-200 rounded" />
                 </div>
@@ -308,7 +308,7 @@ export default function Friends() {
 
         {/* Outgoing pending */}
         {outgoingPending.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+          <div className="bg-zinc-200/80 border border-zinc-300 rounded-2xl shadow-sm p-6">
             <h2 className="text-base font-semibold text-gray-500 text-sm mb-3">Sent requests</h2>
             <ul className="space-y-2">
               {outgoingPending.map((f, i) => {
@@ -325,7 +325,7 @@ export default function Friends() {
                     <button
                       onClick={() => setRemovingFriend(f)}
                       disabled={pendingAction === f.id}
-                      className="text-xs border border-gray-300 bg-white/70 text-gray-500 hover:bg-white disabled:opacity-50 font-medium px-3 py-1.5 rounded-lg transition-colors"
+                      className="text-xs border border-zinc-400 bg-zinc-100 text-gray-600 hover:bg-zinc-50 disabled:opacity-50 font-medium px-3 py-1.5 rounded-lg transition-colors"
                     >
                       Cancel
                     </button>

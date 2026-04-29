@@ -578,27 +578,27 @@ export default function GroupDetail() {
 
       {/* Summary bar */}
       {!expensesLoading && (
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-slate-800 px-6 py-4">
           <div className="max-w-3xl mx-auto flex items-center gap-6 flex-wrap">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Total spent</p>
-              <p className="text-lg font-bold text-gray-900">${totalSpent.toFixed(2)}</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Total spent</p>
+              <p className="text-lg font-bold text-white">${totalSpent.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Expenses</p>
-              <p className="text-lg font-bold text-gray-900">{nonSettlements.length}</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Expenses</p>
+              <p className="text-lg font-bold text-white">{nonSettlements.length}</p>
             </div>
             {balancesLoaded && yourNetBalance !== 0 && (
               <div className="ml-auto">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">Your balance</p>
-                <p className={`text-lg font-bold ${yourNetBalance > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <p className="text-xs text-slate-400 uppercase tracking-wide">Your balance</p>
+                <p className={`text-lg font-bold ${yourNetBalance > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {yourNetBalance > 0 ? `+$${yourNetBalance.toFixed(2)} owed to you` : `-$${Math.abs(yourNetBalance).toFixed(2)} you owe`}
                 </p>
               </div>
             )}
             {balancesLoaded && yourNetBalance === 0 && nonSettlements.length > 0 && (
               <div className="ml-auto">
-                <span className="text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                <span className="text-xs font-medium text-emerald-400 border border-emerald-600 rounded-full px-2.5 py-1">
                   All settled up ✓
                 </span>
               </div>
@@ -608,7 +608,7 @@ export default function GroupDetail() {
       )}
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
+      <div className="bg-slate-700 px-6">
         <nav className="flex gap-6 max-w-3xl mx-auto">
           {(['expenses', 'balances', 'members', 'activity'] as Tab[]).map((tab) => (
             <button
@@ -616,8 +616,8 @@ export default function GroupDetail() {
               onClick={() => setActiveTab(tab)}
               className={`py-3 text-sm font-medium border-b-2 capitalize transition-colors ${
                 activeTab === tab
-                  ? 'border-violet-600 text-violet-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-800'
+                  ? 'border-amber-400 text-white'
+                  : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
               {tab}
