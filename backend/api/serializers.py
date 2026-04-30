@@ -100,6 +100,8 @@ class GroupListSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return None
+        if request.user.is_staff:
+            return 'admin'
         member = obj.members.filter(user=request.user).first()
         return member.role if member else None
 
