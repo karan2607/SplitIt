@@ -18,9 +18,16 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
+type SplitMode = 'equal' | 'percent' | 'amount'
+
 interface CustomSplit {
   user_id: string
   percentage: string
+}
+
+interface AmountSplit {
+  user_id: string
+  amount: string
 }
 
 interface Props {
@@ -33,12 +40,15 @@ interface Props {
 
 export default function AddExpenseForm({ group, onClose, onCreated, initialExpense, onUpdated }: Props) {
   const [serverError, setServerError] = useState<string | null>(null)
-  const [splitMode, setSplitMode] = useState<'equal' | 'custom'>('equal')
+  const [splitMode, setSplitMode] = useState<SplitMode>('equal')
   const [customSplits, setCustomSplits] = useState<CustomSplit[]>(() =>
     group.members.map((m) => ({
       user_id: m.user.id,
       percentage: (100 / group.members.length).toFixed(2),
     }))
+  )
+  const [amountSplits, setAmountSplits] = useState<AmountSplit[]>(() =>
+    group.members.map((m) => ({ user_id: m.user.id, amount: '' }))
   )
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState<string | null>(null)
@@ -78,16 +88,29 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
   const customTotal = customSplits.reduce((sum, s) => sum + parseFloat(s.percentage || '0'), 0)
   const customTotalOk = Math.abs(customTotal - 100) < 0.01
 
+  const amountTotal = amountSplits.reduce((sum, s) => sum + parseFloat(s.amount || '0'), 0)
+  const amountRemaining = amount > 0 ? amount - amountTotal : 0
+  const amountTotalOk = amount > 0 && Math.abs(amountTotal - amount) < 0.01
+
   function updateCustomPct(userId: string, value: string) {
-    const newPct = parseFloat(value) || 0
+    const raw = parseFloat(value) || 0
+    const clamped = Math.min(100, Math.max(0, raw))
     const others = customSplits.filter((s) => s.user_id !== userId)
     const perOther = others.length > 0
-      ? (Math.max(0, 100 - newPct) / others.length).toFixed(2)
+      ? (Math.max(0, 100 - clamped) / others.length).toFixed(2)
       : '0'
     setCustomSplits((prev) =>
       prev.map((s) =>
-        s.user_id === userId ? { ...s, percentage: value } : { ...s, percentage: perOther }
+        s.user_id === userId
+          ? { ...s, percentage: clamped.toString() }
+          : { ...s, percentage: perOther }
       )
+    )
+  }
+
+  function updateAmountSplit(userId: string, value: string) {
+    setAmountSplits((prev) =>
+      prev.map((s) => (s.user_id === userId ? { ...s, amount: value } : s))
     )
   }
 
@@ -104,7 +127,6 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
       setScanError(getErrorMessage(err))
     } finally {
       setScanning(false)
-      // Reset so the same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
@@ -113,23 +135,42 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
     setServerError(null)
     try {
       let payload: Parameters<typeof api.expenses.create>[1]
+      const totalAmt = parseFloat(data.amount)
 
-      if (splitMode === 'custom') {
+      if (splitMode === 'percent') {
         if (!customTotalOk) {
           setServerError(`Percentages must sum to 100 (currently ${customTotal.toFixed(2)})`)
           return
         }
         payload = {
           description: data.description,
-          amount: parseFloat(data.amount).toFixed(2),
+          amount: totalAmt.toFixed(2),
           paid_by: data.paid_by,
           splits: customSplits,
+          date: data.date,
+        }
+      } else if (splitMode === 'amount') {
+        if (!amountTotalOk) {
+          setServerError(`Amounts must sum to $${totalAmt.toFixed(2)} (currently $${amountTotal.toFixed(2)})`)
+          return
+        }
+        const splits = amountSplits
+          .filter((s) => parseFloat(s.amount || '0') > 0)
+          .map((s) => ({
+            user_id: s.user_id,
+            percentage: ((parseFloat(s.amount) / totalAmt) * 100).toFixed(4),
+          }))
+        payload = {
+          description: data.description,
+          amount: totalAmt.toFixed(2),
+          paid_by: data.paid_by,
+          splits,
           date: data.date,
         }
       } else {
         payload = {
           description: data.description,
-          amount: parseFloat(data.amount).toFixed(2),
+          amount: totalAmt.toFixed(2),
           paid_by: data.paid_by,
           split_among: data.split_among,
           date: data.date,
@@ -147,6 +188,10 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
       setServerError(getErrorMessage(err))
     }
   }
+
+  const splitInvalid =
+    (splitMode === 'percent' && !customTotalOk) ||
+    (splitMode === 'amount' && amount > 0 && !amountTotalOk)
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
@@ -233,24 +278,20 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                 )}
               </label>
               <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-                <button
-                  type="button"
-                  onClick={() => setSplitMode('equal')}
-                  className={`px-3 py-1 transition-colors ${splitMode === 'equal' ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Equal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSplitMode('custom')}
-                  className={`px-3 py-1 transition-colors ${splitMode === 'custom' ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Custom %
-                </button>
+                {(['equal', 'percent', 'amount'] as SplitMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSplitMode(mode)}
+                    className={`px-3 py-1 transition-colors ${splitMode === mode ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    {mode === 'equal' ? 'Equal' : mode === 'percent' ? '%' : '$'}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {splitMode === 'equal' ? (
+            {splitMode === 'equal' && (
               <Controller
                 control={control}
                 name="split_among"
@@ -283,7 +324,9 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                   </div>
                 )}
               />
-            ) : (
+            )}
+
+            {splitMode === 'percent' && (
               <div className="space-y-2">
                 {group.members.map((m) => {
                   const split = customSplits.find((s) => s.user_id === m.user.id)!
@@ -319,6 +362,49 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
                 </p>
               </div>
             )}
+
+            {splitMode === 'amount' && (
+              <div className="space-y-2">
+                {group.members.map((m) => {
+                  const split = amountSplits.find((s) => s.user_id === m.user.id)!
+                  const val = parseFloat(split.amount || '0')
+                  const pct = amount > 0 && val > 0 ? ((val / amount) * 100).toFixed(1) : null
+                  return (
+                    <div
+                      key={m.user.id}
+                      className="flex items-center gap-3 px-3 py-2 border border-gray-200 rounded-lg"
+                    >
+                      <Avatar user={m.user} size="sm" />
+                      <span className="flex-1 text-sm text-gray-800">{m.user.name}</span>
+                      {pct && (
+                        <span className="text-xs text-violet-600">{pct}%</span>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-gray-500">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={split.amount}
+                          onChange={(e) => updateAmountSplit(m.user.id, e.target.value)}
+                          className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+                <p className={`text-xs mt-1 ${amountTotalOk ? 'text-gray-400' : amountTotal > amount ? 'text-red-500' : 'text-amber-600'}`}>
+                  {amountTotalOk
+                    ? 'All allocated ✓'
+                    : amountRemaining > 0
+                      ? `$${amountRemaining.toFixed(2)} remaining`
+                      : `Over by $${Math.abs(amountRemaining).toFixed(2)}`}
+                  {amount === 0 && ' — enter a total amount above first'}
+                </p>
+              </div>
+            )}
+
             {errors.split_among && splitMode === 'equal' && (
               <p className="text-xs text-red-500 mt-1">{errors.split_among.message}</p>
             )}
@@ -349,7 +435,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || (splitMode === 'custom' && !customTotalOk)}
+              disabled={isSubmitting || splitInvalid}
               className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-medium rounded-lg py-2 text-sm transition-colors"
             >
               {isSubmitting ? 'Saving...' : isEdit ? 'Save changes' : 'Add expense'}
