@@ -67,6 +67,7 @@ export interface Group {
   description: string | null
   created_by: User
   member_count: number
+  is_settled: boolean
   created_at: string
 }
 

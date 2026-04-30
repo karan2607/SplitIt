@@ -5,6 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from .models import Group, GroupMember, GroupInvite, Expense, ExpenseSplit, Friendship
+from .balance import compute_balances
 
 User = get_user_model()
 
@@ -76,10 +77,11 @@ class GroupListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for the groups list — omits the full member list."""
     created_by = UserSerializer(read_only=True)
     member_count = serializers.SerializerMethodField()
+    is_settled = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
-        fields = ['id', 'name', 'description', 'created_by', 'member_count', 'created_at']
+        fields = ['id', 'name', 'description', 'created_by', 'member_count', 'is_settled', 'created_at']
         read_only_fields = ['id', 'created_by', 'created_at']
 
     def get_member_count(self, obj):
@@ -87,6 +89,11 @@ class GroupListSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'members__count'):
             return obj.members__count
         return obj.members.count()
+
+    def get_is_settled(self, obj):
+        if not Expense.objects.filter(group=obj).exists():
+            return False
+        return len(compute_balances(obj)) == 0
 
 
 class GroupSerializer(GroupListSerializer):

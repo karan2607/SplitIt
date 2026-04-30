@@ -302,9 +302,16 @@ export default function Dashboard() {
                       {group.description && (
                         <p className="text-sm text-gray-500 mt-0.5">{group.description}</p>
                       )}
-                      <span className={`inline-block text-xs font-medium rounded-full px-2.5 py-1 mt-2 ${color.badge}`}>
-                        {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
-                      </span>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${color.badge}`}>
+                          {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
+                        </span>
+                        {group.is_settled && (
+                          <span className="text-xs font-medium rounded-full px-2.5 py-1 bg-emerald-100 text-emerald-700">
+                            ✓ Settled up
+                          </span>
+                        )}
+                      </div>
                     </button>
                   </div>
                   <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">

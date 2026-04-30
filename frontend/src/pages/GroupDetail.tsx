@@ -661,7 +661,7 @@ export default function GroupDetail() {
                 {expenses.map((expense, i) => (
                   <li
                     key={expense.id}
-                    className={`rounded-2xl shadow-sm border group ${
+                    className={`rounded-2xl shadow-sm border ${
                       expense.is_settlement
                         ? 'border-l-4 border-l-emerald-400 bg-emerald-50 border-emerald-200'
                         : CARD_COLORS[i % CARD_COLORS.length]
@@ -695,26 +695,24 @@ export default function GroupDetail() {
                               </span>
                             )}
                           </p>
-                          {(expense.created_by.id === user?.id || isAdmin) && (
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {expense.created_by.id === user?.id && (
-                                <button
-                                  onClick={() => setEditingExpense(expense)}
-                                  className="text-gray-400 hover:text-violet-500 transition-colors text-sm leading-none"
-                                  aria-label="Edit expense"
-                                >
-                                  ✎
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setDeletingExpense(expense)}
-                                className="text-gray-400 hover:text-rose-500 transition-colors text-lg leading-none"
-                                aria-label="Delete expense"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => setEditingExpense(expense)}
+                              disabled={expense.created_by.id !== user?.id}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Edit expense"
+                            >
+                              ✎
+                            </button>
+                            <button
+                              onClick={() => setDeletingExpense(expense)}
+                              disabled={expense.created_by.id !== user?.id && !isAdmin}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg leading-none"
+                              aria-label="Delete expense"
+                            >
+                              ×
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
