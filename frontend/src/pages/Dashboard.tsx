@@ -402,7 +402,7 @@ export default function Dashboard() {
                           {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
                         </span>
                         <span className="text-xs font-medium rounded-full px-2.5 py-1 bg-gray-100 text-gray-500">
-                          By {group.created_by.name}
+                          Created by {group.created_by.name}
                         </span>
                         {group.is_settled && (
                           <span className="text-xs font-medium rounded-full px-2.5 py-1 bg-emerald-100 text-emerald-700">
