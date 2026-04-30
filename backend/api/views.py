@@ -180,7 +180,7 @@ def groups(request):
             .annotate(**{'members__count': Count('members')})
             .select_related('created_by')
         )
-        return Response(GroupListSerializer(group_list, many=True).data)
+        return Response(GroupListSerializer(group_list, many=True, context={'request': request}).data)
 
     # POST — create a new group
     serializer = GroupListSerializer(data=request.data)

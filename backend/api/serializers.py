@@ -78,10 +78,11 @@ class GroupListSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
     member_count = serializers.SerializerMethodField()
     is_settled = serializers.SerializerMethodField()
+    current_user_role = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
-        fields = ['id', 'name', 'description', 'created_by', 'member_count', 'is_settled', 'created_at']
+        fields = ['id', 'name', 'description', 'created_by', 'member_count', 'is_settled', 'current_user_role', 'created_at']
         read_only_fields = ['id', 'created_by', 'created_at']
 
     def get_member_count(self, obj):
@@ -94,6 +95,13 @@ class GroupListSerializer(serializers.ModelSerializer):
         if not Expense.objects.filter(group=obj).exists():
             return False
         return len(compute_balances(obj)) == 0
+
+    def get_current_user_role(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        member = obj.members.filter(user=request.user).first()
+        return member.role if member else None
 
 
 class GroupSerializer(GroupListSerializer):

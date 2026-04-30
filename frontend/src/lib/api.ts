@@ -68,6 +68,7 @@ export interface Group {
   created_by: User
   member_count: number
   is_settled: boolean
+  current_user_role: 'admin' | 'member' | null
   created_at: string
 }
 

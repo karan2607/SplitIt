@@ -385,7 +385,7 @@ export default function Dashboard() {
           <ul className="space-y-3">
             {groups.map((group, i) => {
               const color = GROUP_COLORS[i % GROUP_COLORS.length]
-              const isCreator = group.created_by.id === user?.id
+              const canManage = group.current_user_role === 'admin'
               return (
                 <li key={group.id} className="relative">
                   <div className={`${color.bg} border ${color.border} rounded-2xl shadow-sm hover:shadow-md transition-all`}>
@@ -415,14 +415,14 @@ export default function Dashboard() {
                   <div className="absolute top-4 right-4 flex gap-1">
                     <button
                       onClick={() => setEditingGroup(group)}
-                      disabled={!isCreator}
-                      title={isCreator ? 'Edit group' : 'Only the group creator can edit'}
+                      disabled={!canManage}
+                      title={canManage ? 'Edit group' : 'Only group admins can edit'}
                       className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-violet-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >✎</button>
                     <button
                       onClick={() => setDeletingGroup(group)}
-                      disabled={!isCreator}
-                      title={isCreator ? 'Delete group' : 'Only the group creator can delete'}
+                      disabled={!canManage}
+                      title={canManage ? 'Delete group' : 'Only group admins can delete'}
                       className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg leading-none"
                     >×</button>
                   </div>
@@ -454,10 +454,15 @@ export default function Dashboard() {
           title="Delete group?"
           message={`"${deletingGroup.name}" and all its expenses will be permanently deleted. This cannot be undone.`}
           onConfirm={async () => {
-            await api.groups.delete(deletingGroup.id)
-            setDeletingGroup(null)
-            refetch()
-            showToast('Group deleted', 'info')
+            try {
+              await api.groups.delete(deletingGroup.id)
+              setDeletingGroup(null)
+              refetch()
+              showToast('Group deleted', 'info')
+            } catch (err) {
+              setDeletingGroup(null)
+              showToast(getErrorMessage(err), 'error')
+            }
           }}
           onClose={() => setDeletingGroup(null)}
         />
