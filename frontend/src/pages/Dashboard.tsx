@@ -385,8 +385,9 @@ export default function Dashboard() {
           <ul className="space-y-3">
             {groups.map((group, i) => {
               const color = GROUP_COLORS[i % GROUP_COLORS.length]
+              const isCreator = group.created_by.id === user?.id
               return (
-                <li key={group.id} className="relative group/card">
+                <li key={group.id} className="relative">
                   <div className={`${color.bg} border ${color.border} rounded-2xl shadow-sm hover:shadow-md transition-all`}>
                     <button
                       onClick={() => navigate(`/groups/${group.id}`)}
@@ -400,6 +401,9 @@ export default function Dashboard() {
                         <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${color.badge}`}>
                           {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
                         </span>
+                        <span className="text-xs font-medium rounded-full px-2.5 py-1 bg-gray-100 text-gray-500">
+                          By {group.created_by.name}
+                        </span>
                         {group.is_settled && (
                           <span className="text-xs font-medium rounded-full px-2.5 py-1 bg-emerald-100 text-emerald-700">
                             ✓ Settled up
@@ -411,13 +415,15 @@ export default function Dashboard() {
                   <div className="absolute top-4 right-4 flex gap-1">
                     <button
                       onClick={() => setEditingGroup(group)}
-                      className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-violet-600 transition-colors"
-                      aria-label="Edit group"
+                      disabled={!isCreator}
+                      title={isCreator ? 'Edit group' : 'Only the group creator can edit'}
+                      className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-violet-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >✎</button>
                     <button
                       onClick={() => setDeletingGroup(group)}
-                      className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-rose-500 transition-colors text-lg leading-none"
-                      aria-label="Delete group"
+                      disabled={!isCreator}
+                      title={isCreator ? 'Delete group' : 'Only the group creator can delete'}
+                      className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-rose-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg leading-none"
                     >×</button>
                   </div>
                 </li>

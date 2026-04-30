@@ -695,24 +695,30 @@ export default function GroupDetail() {
                               </span>
                             )}
                           </p>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => setEditingExpense(expense)}
-                              disabled={expense.created_by.id !== user?.id && expense.paid_by.id !== user?.id && !isAdmin}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                              aria-label="Edit expense"
-                            >
-                              ✎
-                            </button>
-                            <button
-                              onClick={() => setDeletingExpense(expense)}
-                              disabled={expense.created_by.id !== user?.id && expense.paid_by.id !== user?.id && !isAdmin}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg leading-none"
-                              aria-label="Delete expense"
-                            >
-                              ×
-                            </button>
-                          </div>
+                          {(() => {
+                            const canAct = expense.created_by.id === user?.id || expense.paid_by.id === user?.id || isAdmin
+                            const disabledReason = 'Only the creator, payer, or a group admin can do this'
+                            return (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => setEditingExpense(expense)}
+                                  disabled={!canAct}
+                                  title={canAct ? 'Edit expense' : disabledReason}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                >
+                                  ✎
+                                </button>
+                                <button
+                                  onClick={() => setDeletingExpense(expense)}
+                                  disabled={!canAct}
+                                  title={canAct ? 'Delete expense' : disabledReason}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg leading-none"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            )
+                          })()}
                         </div>
                       </div>
                     </div>
