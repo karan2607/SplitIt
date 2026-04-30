@@ -578,19 +578,19 @@ export default function GroupDetail() {
 
       {/* Summary bar */}
       {!expensesLoading && (
-        <div className="bg-violet-800 px-6 py-4">
+        <div className="bg-violet-600 px-6 py-4">
           <div className="max-w-3xl mx-auto flex items-center gap-6 flex-wrap">
             <div>
-              <p className="text-xs text-violet-300 uppercase tracking-wide">Total spent</p>
+              <p className="text-xs text-violet-200 uppercase tracking-wide">Total spent</p>
               <p className="text-lg font-bold text-white">${totalSpent.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-xs text-violet-300 uppercase tracking-wide">Expenses</p>
+              <p className="text-xs text-violet-200 uppercase tracking-wide">Expenses</p>
               <p className="text-lg font-bold text-white">{nonSettlements.length}</p>
             </div>
             {balancesLoaded && yourNetBalance !== 0 && (
               <div className="ml-auto">
-                <p className="text-xs text-violet-300 uppercase tracking-wide">Your balance</p>
+                <p className="text-xs text-violet-200 uppercase tracking-wide">Your balance</p>
                 <p className={`text-lg font-bold ${yourNetBalance > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {yourNetBalance > 0 ? `+$${yourNetBalance.toFixed(2)} owed to you` : `-$${Math.abs(yourNetBalance).toFixed(2)} you owe`}
                 </p>
@@ -608,7 +608,7 @@ export default function GroupDetail() {
       )}
 
       {/* Tabs */}
-      <div className="bg-violet-700 px-6">
+      <div className="bg-violet-500 px-6">
         <nav className="flex gap-6 max-w-3xl mx-auto">
           {(['expenses', 'balances', 'members', 'activity'] as Tab[]).map((tab) => (
             <button
@@ -617,7 +617,7 @@ export default function GroupDetail() {
               className={`py-3 text-sm font-medium border-b-2 capitalize transition-colors ${
                 activeTab === tab
                   ? 'border-amber-400 text-white'
-                  : 'border-transparent text-violet-300 hover:text-slate-200'
+                  : 'border-transparent text-violet-200 hover:text-slate-200'
               }`}
             >
               {tab}
