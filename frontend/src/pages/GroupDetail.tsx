@@ -548,7 +548,7 @@ export default function GroupDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-violet-50">
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
         <button
           onClick={() => navigate('/dashboard')}
