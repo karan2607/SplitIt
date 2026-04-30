@@ -698,7 +698,7 @@ export default function GroupDetail() {
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => setEditingExpense(expense)}
-                              disabled={expense.created_by.id !== user?.id}
+                              disabled={expense.created_by.id !== user?.id && expense.paid_by.id !== user?.id && !isAdmin}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                               aria-label="Edit expense"
                             >
@@ -706,7 +706,7 @@ export default function GroupDetail() {
                             </button>
                             <button
                               onClick={() => setDeletingExpense(expense)}
-                              disabled={expense.created_by.id !== user?.id && !isAdmin}
+                              disabled={expense.created_by.id !== user?.id && expense.paid_by.id !== user?.id && !isAdmin}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-lg leading-none"
                               aria-label="Delete expense"
                             >

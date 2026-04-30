@@ -314,7 +314,7 @@ export default function Dashboard() {
                       </div>
                     </button>
                   </div>
-                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                  <div className="absolute top-4 right-4 flex gap-1">
                     <button
                       onClick={() => setEditingGroup(group)}
                       className="p-1.5 rounded-lg hover:bg-black/10 text-gray-400 hover:text-violet-600 transition-colors"
