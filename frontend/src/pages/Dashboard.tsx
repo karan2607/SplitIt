@@ -200,7 +200,7 @@ export default function Dashboard() {
       <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center justify-between shadow-md">
         <h1 className="text-xl font-bold text-white tracking-tight">SplitIt</h1>
         <div className="flex items-center gap-3">
-          <Link to="/friends" className="relative text-sm text-white/70 hover:text-white transition-colors hidden sm:flex items-center gap-1">
+          <Link to="/friends" className="relative text-sm text-white/70 hover:text-white transition-colors flex items-center gap-1">
             Friends
             {pendingFriendCount > 0 && (
               <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full px-1">
