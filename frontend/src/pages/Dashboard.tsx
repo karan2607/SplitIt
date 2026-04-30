@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '../hooks/useAuth'
 import { useGroups } from '../hooks/useGroup'
-import { api, type Group } from '../lib/api'
+import { api, type Group, type User } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useToast } from '../components/Toast'
 import Avatar from '../components/Avatar'
@@ -101,15 +101,49 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
 }
 
 function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreated: (g: Group) => void }) {
+  const { user } = useAuth()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [memberQuery, setMemberQuery] = useState('')
+  const [memberResults, setMemberResults] = useState<User[]>([])
+  const [searching, setSearching] = useState(false)
+  const [selectedMembers, setSelectedMembers] = useState<User[]>([])
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    if (memberQuery.trim().length < 2) { setMemberResults([]); return }
+    setSearching(true)
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const results = await api.users.search(memberQuery.trim())
+        const selectedIds = new Set(selectedMembers.map((m) => m.id))
+        setMemberResults(results.filter((u) => u.id !== user?.id && !selectedIds.has(u.id)))
+      } finally {
+        setSearching(false)
+      }
+    }, 350)
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+  }, [memberQuery, selectedMembers, user])
+
+  function addMember(u: User) {
+    setSelectedMembers((prev) => [...prev, u])
+    setMemberQuery('')
+    setMemberResults([])
+  }
+
+  function removeMember(id: string) {
+    setSelectedMembers((prev) => prev.filter((m) => m.id !== id))
+  }
 
   async function onSubmit(data: FormData) {
     setServerError(null)
     try {
       const group = await api.groups.create(data)
+      await Promise.all(selectedMembers.map((m) => api.groups.addMember(group.id, m.id)))
       onCreated(group)
     } catch (err) {
       setServerError(getErrorMessage(err))
@@ -118,7 +152,7 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">New Group</h2>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
@@ -141,6 +175,66 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Add members <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+
+            {selectedMembers.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedMembers.map((m) => (
+                  <span key={m.id} className="flex items-center gap-1.5 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-medium rounded-full pl-2 pr-1 py-1">
+                    {m.name}
+                    <button
+                      type="button"
+                      onClick={() => removeMember(m.id)}
+                      className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-violet-200 transition-colors text-violet-500 leading-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="relative">
+              <input
+                type="text"
+                value={memberQuery}
+                onChange={(e) => setMemberQuery(e.target.value)}
+                placeholder="Search by name or @username"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+              {searching && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Searching…</span>
+              )}
+            </div>
+
+            {memberResults.length > 0 && (
+              <ul className="mt-1.5 border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
+                {memberResults.map((u) => (
+                  <li key={u.id} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <Avatar user={u} size="sm" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{u.name}</p>
+                        {u.username && <p className="text-xs text-gray-400">@{u.username}</p>}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => addMember(u)}
+                      className="text-xs bg-violet-600 hover:bg-violet-700 text-white font-medium px-2.5 py-1 rounded-lg transition-colors"
+                    >
+                      Add
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           {serverError && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {serverError}
