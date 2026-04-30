@@ -401,7 +401,7 @@ export default function Dashboard() {
                         <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${color.badge}`}>
                           {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
                         </span>
-                        <span className="text-xs font-medium rounded-full px-2.5 py-1 bg-gray-100 text-gray-500">
+                        <span className={`text-xs font-medium rounded-full px-2.5 py-1 ${color.badge}`}>
                           Created by {group.created_by.name}
                         </span>
                         {group.is_settled && (

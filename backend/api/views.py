@@ -206,9 +206,9 @@ def group_detail(request, pk):
         )
         return Response(GroupSerializer(group).data)
 
-    # PATCH / DELETE — admin only
+    # PATCH / DELETE — admin or site staff
     is_admin = GroupMember.objects.filter(group=group, user=request.user, role='admin').exists()
-    if not is_admin:
+    if not is_admin and not request.user.is_staff:
         return Response({'detail': 'Only group admins can do this.'}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == 'PATCH':
@@ -456,15 +456,16 @@ def expense_detail(request, group_pk, expense_pk):
     expense = get_object_or_404(Expense, pk=expense_pk, group=group)
     is_creator = expense.created_by == request.user
     is_admin = GroupMember.objects.filter(group=group, user=request.user, role='admin').exists()
+    is_staff = request.user.is_staff
 
     if request.method == 'DELETE':
-        if not is_creator and not is_admin:
+        if not is_creator and not is_admin and not is_staff:
             return Response({'detail': 'Only the expense creator or a group admin can delete it.'}, status=status.HTTP_403_FORBIDDEN)
         expense.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # PATCH — creator only
-    if not is_creator:
+    # PATCH — creator, admin, or site staff
+    if not is_creator and not is_staff:
         return Response({'detail': 'Only the expense creator can edit it.'}, status=status.HTTP_403_FORBIDDEN)
 
     # PATCH — partial update
