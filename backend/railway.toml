@@ -3,7 +3,7 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "gunicorn config.wsgi --workers 2 --threads 2 --log-file -"
-preDeployCommand = "python manage.py migrate --noinput && python manage.py make_staff pandyakaran95@gmail.com"
+preDeployCommand = "python manage.py migrate --noinput"
 healthcheckPath = "/api/health/"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
