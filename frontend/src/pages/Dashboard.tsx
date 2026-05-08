@@ -10,6 +10,7 @@ import { getErrorMessage } from '../lib/errors'
 import { useToast } from '../components/Toast'
 import { SkeletonGroupCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
+import Avatar from '../components/Avatar'
 
 const schema = z.object({
   name: z.string().min(1, 'Group name is required').max(100),
