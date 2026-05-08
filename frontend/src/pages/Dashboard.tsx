@@ -78,7 +78,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const { groups, isLoading: groupsLoading, refetch: refetchGroups } = useGroups()
+  const { groups, isLoading: groupsLoading } = useGroups()
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [dashLoading, setDashLoading] = useState(true)
 
