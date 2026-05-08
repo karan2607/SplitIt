@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 
 const NAV = [
-  { label: 'Groups',  emoji: '⊞', path: '/dashboard', match: (p: string) => p === '/dashboard' || p.startsWith('/groups') },
+  { label: 'Home',    emoji: '⌂',  path: '/dashboard', match: (p: string) => p === '/dashboard' },
+  { label: 'Groups',  emoji: '⊞', path: '/groups',    match: (p: string) => p === '/groups' || p.startsWith('/groups/') },
   { label: 'Friends', emoji: '👥', path: '/friends',   match: (p: string) => p.startsWith('/friends') },
   { label: 'Profile', emoji: '👤', path: '/profile',   match: (p: string) => p.startsWith('/profile') },
 ]

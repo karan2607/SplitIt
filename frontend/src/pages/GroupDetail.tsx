@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -443,10 +443,11 @@ function ActivityFeed({
 export default function GroupDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const { group, isLoading, error, refetch } = useGroup(id!)
   const { showToast } = useToast()
-  const [activeTab, setActiveTab] = useState<Tab>('expenses')
+  const [activeTab, setActiveTab] = useState<Tab>((searchParams.get('tab') as Tab) ?? 'expenses')
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [expensesLoading, setExpensesLoading] = useState(true)
   const [showAddExpense, setShowAddExpense] = useState(false)

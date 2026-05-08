@@ -18,6 +18,8 @@ urlpatterns = [
     # Friends
     path('friends/', views.friends, name='friends'),
     path('friends/<uuid:pk>/', views.friend_detail, name='friend-detail'),
+    # Dashboard
+    path('dashboard/', views.dashboard, name='dashboard'),
     # Groups
     path('groups/', views.groups, name='groups'),
     path('groups/<uuid:pk>/', views.group_detail, name='group-detail'),

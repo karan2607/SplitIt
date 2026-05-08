@@ -167,6 +167,95 @@ def password_reset_confirm(request):
 
 
 # ---------------------------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------------------------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard(request):
+    user = request.user
+    memberships = GroupMember.objects.filter(user=user).select_related('group')
+    user_groups = [m.group for m in memberships]
+
+    total_owed_to_me = 0
+    total_i_owe = 0
+    unsettled_count = 0
+    all_balances = []
+    all_expenses = []
+
+    # Collect all user ids we'll need for lookup
+    user_id_str = str(user.id)
+
+    for group in user_groups:
+        transfers = compute_balances(group)
+        group_has_balance = False
+        for t in transfers:
+            if t['to_user_id'] == user_id_str:
+                total_owed_to_me += t['amount']
+                all_balances.append({**t, 'group': group})
+                group_has_balance = True
+            elif t['from_user_id'] == user_id_str:
+                total_i_owe += t['amount']
+                all_balances.append({**t, 'group': group})
+                group_has_balance = True
+        if group_has_balance:
+            unsettled_count += 1
+
+        exps = (Expense.objects
+                .filter(group=group, is_settlement=False)
+                .order_by('-date', '-created_at')
+                .select_related('paid_by')
+                .prefetch_related('splits__user')[:10])
+        for exp in exps:
+            my_split = next((s for s in exp.splits.all() if str(s.user_id) == user_id_str), None)
+            all_expenses.append({
+                'expense': exp,
+                'group': group,
+                'my_share': str(my_split.amount_owed) if my_split else None,
+            })
+
+    all_expenses.sort(key=lambda x: (x['expense'].date, x['expense'].created_at), reverse=True)
+    all_expenses = all_expenses[:15]
+
+    # Resolve user objects for balances in one query
+    balance_user_ids = set()
+    for b in all_balances:
+        balance_user_ids.add(b['from_user_id'])
+        balance_user_ids.add(b['to_user_id'])
+    users_map = {str(u.id): u for u in User.objects.filter(id__in=balance_user_ids)}
+
+    serialized_balances = [
+        {
+            'from_user': UserSerializer(users_map[b['from_user_id']]).data,
+            'to_user': UserSerializer(users_map[b['to_user_id']]).data,
+            'amount': str(b['amount']),
+            'group': {'id': str(b['group'].id), 'name': b['group'].name},
+        }
+        for b in all_balances
+    ]
+
+    serialized_expenses = [
+        {
+            'id': str(e['expense'].id),
+            'description': e['expense'].description,
+            'amount': str(e['expense'].amount),
+            'paid_by': UserSerializer(e['expense'].paid_by).data,
+            'date': str(e['expense'].date),
+            'my_share': e['my_share'],
+            'group': {'id': str(e['group'].id), 'name': e['group'].name},
+        }
+        for e in all_expenses
+    ]
+
+    return Response({
+        'total_owed_to_me': str(total_owed_to_me),
+        'total_i_owe': str(total_i_owe),
+        'unsettled_groups': unsettled_count,
+        'balances': serialized_balances,
+        'recent_expenses': serialized_expenses,
+    })
+
+
 # Groups
 # ---------------------------------------------------------------------------
 

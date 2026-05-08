@@ -8,6 +8,7 @@ import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
+import Groups from './pages/Groups'
 import GroupDetail from './pages/GroupDetail'
 import Friends from './pages/Friends'
 import InviteAccept from './pages/InviteAccept'
@@ -136,6 +137,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <Dashboard />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/groups"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Groups />
             </AppLayout>
           </ProtectedRoute>
         }

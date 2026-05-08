@@ -100,6 +100,31 @@ export interface Balance {
   amount: string
 }
 
+export interface DashboardBalance {
+  from_user: User
+  to_user: User
+  amount: string
+  group: { id: string; name: string }
+}
+
+export interface DashboardExpense {
+  id: string
+  description: string
+  amount: string
+  paid_by: User
+  date: string
+  my_share: string | null
+  group: { id: string; name: string }
+}
+
+export interface DashboardData {
+  total_owed_to_me: string
+  total_i_owe: string
+  unsettled_groups: number
+  balances: DashboardBalance[]
+  recent_expenses: DashboardExpense[]
+}
+
 export interface Friendship {
   id: string
   from_user: User
@@ -120,6 +145,9 @@ export interface Invite {
 }
 
 export const api = {
+  dashboard: {
+    get: () => request<DashboardData>('/api/dashboard/'),
+  },
   auth: {
     signup: (data: { name: string; username: string; email: string; password: string }) =>
       request<AuthResponse>('/api/auth/signup/', { method: 'POST', body: JSON.stringify(data) }),
