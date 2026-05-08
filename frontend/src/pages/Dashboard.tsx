@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,7 +8,6 @@ import { useGroups } from '../hooks/useGroup'
 import { api, type Group, type User } from '../lib/api'
 import { getErrorMessage } from '../lib/errors'
 import { useToast } from '../components/Toast'
-import Avatar from '../components/Avatar'
 import { SkeletonGroupCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
 
@@ -255,29 +254,13 @@ function CreateGroupModal({ onClose, onCreated }: { onClose: () => void; onCreat
 }
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { groups, isLoading, error, refetch } = useGroups()
   const [showModal, setShowModal] = useState(false)
   const [editingGroup, setEditingGroup] = useState<Group | null>(null)
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null)
-  const [pendingFriendCount, setPendingFriendCount] = useState(0)
   const { showToast } = useToast()
-
-  useEffect(() => {
-    if (!user) return
-    api.friends.list().then((list) => {
-      const count = list.filter(
-        (f) => f.status === 'pending' && f.to_user.id === user.id
-      ).length
-      setPendingFriendCount(count)
-    }).catch(() => {})
-  }, [user])
-
-  function handleLogout() {
-    logout()
-    navigate('/login', { replace: true })
-  }
 
   function handleCreated(group: Group) {
     setShowModal(false)
@@ -289,31 +272,7 @@ export default function Dashboard() {
   const firstName = user?.name?.split(' ')[0] ?? 'there'
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center justify-between shadow-md">
-        <h1 className="text-xl font-bold text-white tracking-tight">SplitIt</h1>
-        <div className="flex items-center gap-3">
-          <Link to="/friends" className="relative text-sm text-white/70 hover:text-white transition-colors flex items-center gap-1">
-            Friends
-            {pendingFriendCount > 0 && (
-              <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full px-1">
-                {pendingFriendCount}
-              </span>
-            )}
-          </Link>
-          <Link to="/profile" className="flex items-center gap-2 group">
-            {user && <Avatar user={user} size="sm" className="ring-2 ring-white/30 group-hover:ring-white/60 transition-all" />}
-            <span className="text-sm text-white/80 group-hover:text-white transition-colors hidden sm:block">
-              {user?.name}
-            </span>
-          </Link>
-          <button onClick={handleLogout} className="text-sm text-white/60 hover:text-white transition-colors ml-1">
-            Log out
-          </button>
-        </div>
-      </header>
-
+    <div>
       <main className="max-w-3xl mx-auto px-6 py-8">
 
         {/* Welcome */}

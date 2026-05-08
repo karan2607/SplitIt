@@ -112,19 +112,9 @@ export default function Profile() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-white/60 hover:text-white transition-colors text-lg leading-none"
-          aria-label="Back"
-        >
-          ←
-        </button>
-        <h1 className="text-xl font-bold text-white">Profile</h1>
-      </header>
-
+    <div>
       <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
         {/* Account info */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center gap-4">
           <div className="relative">
@@ -284,3 +274,4 @@ export default function Profile() {
     </div>
   )
 }
+

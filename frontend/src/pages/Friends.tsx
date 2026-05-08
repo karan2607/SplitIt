@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { api, type Friendship, type User } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { getErrorMessage } from '../lib/errors'
@@ -37,7 +36,6 @@ function enrichFriendships(friendships: Friendship[], myId: string): FriendshipW
 
 export default function Friends() {
   const { user } = useAuth()
-  const navigate = useNavigate()
   const { showToast } = useToast()
 
   const [friendships, setFriendships] = useState<FriendshipWithOther[]>([])
@@ -147,19 +145,10 @@ export default function Friends() {
   const knownIds = new Set(friendships.map((f) => f.other.id))
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-white/60 hover:text-white transition-colors text-lg leading-none"
-          aria-label="Back"
-        >
-          ←
-        </button>
-        <h1 className="text-xl font-bold text-white">Friends</h1>
-      </header>
-
-      <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
+    <div>
+      <main className="max-w-lg mx-auto px-6 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Friends</h1>
+        <div className="space-y-6">
 
         {/* Search */}
         <div className={`${SECTION_COLORS[0].bg} border ${SECTION_COLORS[0].border} rounded-2xl shadow-sm p-6`}>
@@ -343,6 +332,7 @@ export default function Friends() {
             </ul>
           </div>
         )}
+        </div>
       </main>
 
       {removingFriend && (

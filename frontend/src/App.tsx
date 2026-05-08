@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthContext, useAuth } from './hooks/useAuth'
 import { api, ApiError, type User } from './lib/api'
 import { setToken, clearToken, getToken } from './lib/auth'
@@ -13,6 +13,8 @@ import Friends from './pages/Friends'
 import InviteAccept from './pages/InviteAccept'
 import Profile from './pages/Profile'
 import { ToastProvider } from './components/Toast'
+import Sidebar from './components/Sidebar'
+import BottomNav from './components/BottomNav'
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
 const ACTIVITY_EVENTS = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'] as const
@@ -30,8 +32,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
     api.auth.me()
       .then(setUser)
       .catch((err) => {
-        // Only clear the token when the server explicitly rejects it (401).
-        // A 502/503 during a deploy restart should not log the user out.
         if (err instanceof ApiError && err.status === 401) clearToken()
       })
       .finally(() => setIsLoading(false))
@@ -49,7 +49,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
-  // Auto-logout after 30 minutes of inactivity, only while logged in
   useEffect(() => {
     if (!user) return
 
@@ -63,7 +62,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       if (Date.now() - lastActiveRef.current > INACTIVITY_TIMEOUT_MS) {
         logout()
       }
-    }, 60_000) // check every minute
+    }, 60_000)
 
     return () => {
       ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, onActivity))
@@ -75,6 +74,34 @@ function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ user, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
+  )
+}
+
+function AppLayout({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  const [pendingFriendCount, setPendingFriendCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    api.friends.list().then((list) => {
+      const count = list.filter(
+        (f) => f.status === 'pending' && f.to_user.id === user.id
+      ).length
+      setPendingFriendCount(count)
+    }).catch(() => {})
+  }, [user, location.pathname])
+
+  if (!user) return <>{children}</>
+
+  return (
+    <div className="flex min-h-screen bg-violet-950">
+      <Sidebar pendingFriendCount={pendingFriendCount} />
+      <div className="flex-1 min-w-0 bg-slate-50 md:ml-16 pb-16 md:pb-0 min-h-screen">
+        {children}
+      </div>
+      <BottomNav pendingFriendCount={pendingFriendCount} />
+    </div>
   )
 }
 
@@ -107,7 +134,9 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <AppLayout>
+              <Dashboard />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -115,7 +144,9 @@ function AppRoutes() {
         path="/groups/:id"
         element={
           <ProtectedRoute>
-            <GroupDetail />
+            <AppLayout>
+              <GroupDetail />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -123,17 +154,20 @@ function AppRoutes() {
         path="/friends"
         element={
           <ProtectedRoute>
-            <Friends />
+            <AppLayout>
+              <Friends />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
-      {/* Invite accept — public so non-members can land here and sign up */}
       <Route path="/invite/:token" element={<InviteAccept />} />
       <Route
         path="/profile"
         element={
           <ProtectedRoute>
-            <Profile />
+            <AppLayout>
+              <Profile />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
