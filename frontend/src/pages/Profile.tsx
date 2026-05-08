@@ -10,6 +10,7 @@ import { getErrorMessage } from '../lib/errors'
 import { useToast } from '../components/Toast'
 import Avatar from '../components/Avatar'
 import AvatarPicker from '../components/AvatarPicker'
+import PageHeader from '../components/PageHeader'
 
 const nameSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
@@ -113,8 +114,8 @@ export default function Profile() {
 
   return (
     <div>
-      <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+      <PageHeader title="Profile" />
+      <main className="px-6 py-6 max-w-2xl space-y-6">
         {/* Account info */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center gap-4">
           <div className="relative">

@@ -5,6 +5,7 @@ import { getErrorMessage } from '../lib/errors'
 import { useToast } from '../components/Toast'
 import Avatar from '../components/Avatar'
 import ConfirmModal from '../components/ConfirmModal'
+import PageHeader from '../components/PageHeader'
 
 const CARD_COLORS = [
   { bg: 'bg-orange-50', border: 'border-orange-200' },
@@ -146,8 +147,8 @@ export default function Friends() {
 
   return (
     <div>
-      <main className="max-w-lg mx-auto px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Friends</h1>
+      <PageHeader title="Friends" />
+      <main className="px-6 py-6 max-w-2xl">
         <div className="space-y-6">
 
         {/* Search */}

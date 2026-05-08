@@ -11,6 +11,7 @@ import { useToast } from '../components/Toast'
 import { SkeletonGroupCard } from '../components/Skeleton'
 import ConfirmModal from '../components/ConfirmModal'
 import Avatar from '../components/Avatar'
+import PageHeader from '../components/PageHeader'
 
 const schema = z.object({
   name: z.string().min(1, 'Group name is required').max(100),
@@ -274,25 +275,24 @@ export default function Dashboard() {
 
   return (
     <div>
-      <main className="max-w-3xl mx-auto px-6 py-8">
+      <PageHeader
+        title="Groups"
+        subtitle={`Hi, ${firstName} 👋`}
+        action={
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-white/15 hover:bg-white/25 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+          >
+            + New group
+          </button>
+        }
+      />
 
-        {/* Welcome */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Welcome back, {firstName}! 👋
-          </h2>
-          <p className="text-gray-500 mt-1">
-            {isLoading
-              ? 'Loading your groups…'
-              : groups.length > 0
-                ? `You're in ${groups.length} ${groups.length === 1 ? 'group' : 'groups'}. Track expenses and settle up easily.`
-                : 'Create your first group to start splitting expenses with friends.'}
-          </p>
-        </div>
+      <main className="px-6 py-6 max-w-4xl">
 
         {/* How it works — shown only when no groups */}
         {!isLoading && !error && groups.length === 0 && (
-          <div className="mb-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+          <div className="mb-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-5">How SplitIt works</h3>
             <div className="space-y-5">
               {HOW_IT_WORKS.map((step, i) => (
@@ -315,21 +315,6 @@ export default function Dashboard() {
             </button>
           </div>
         )}
-
-        {/* Groups section */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-gray-900">
-            {groups.length > 0 ? 'Your groups' : ''}
-          </h3>
-          {groups.length > 0 && (
-            <button
-              onClick={() => setShowModal(true)}
-              className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              + New group
-            </button>
-          )}
-        </div>
 
         {isLoading && (
           <div className="space-y-3">

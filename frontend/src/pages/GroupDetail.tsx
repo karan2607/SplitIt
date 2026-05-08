@@ -522,12 +522,15 @@ export default function GroupDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-violet-50">
-        <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
-          <button onClick={() => navigate('/dashboard')} className="text-white/60 hover:text-white transition-colors text-lg leading-none" aria-label="Back">←</button>
-          <div className="h-6 w-32 bg-white/20 rounded animate-pulse" />
+      <div className="min-h-screen bg-slate-50">
+        <header className="bg-violet-700 px-6 py-5 flex items-start justify-between">
+          <div className="space-y-1.5">
+            <div className="h-7 w-40 bg-white/20 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+          </div>
         </header>
-        <main className="max-w-3xl mx-auto px-6 py-8 space-y-3">
+        <main className="px-6 py-6 max-w-4xl space-y-3">
+          <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-6" />
           {[0, 1, 2, 3].map((i) => <SkeletonExpenseCard key={i} />)}
         </main>
       </div>
@@ -548,85 +551,83 @@ export default function GroupDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-violet-50">
-      <header className="bg-gradient-to-r from-violet-700 to-violet-900 px-6 py-4 flex items-center gap-4 shadow-md">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-white/60 hover:text-white transition-colors text-lg leading-none"
-          aria-label="Back"
-        >
-          ←
-        </button>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold text-white truncate">{group.name}</h1>
-            {group.description && (
-              <p className="text-sm text-white/60 truncate">{group.description}</p>
-            )}
-          </div>
-          {isAdmin && (
-            <button
-              onClick={() => setShowEditGroup(true)}
-              className="text-white/50 hover:text-white transition-colors flex-shrink-0 text-base leading-none mt-0.5"
-              aria-label="Edit group"
-            >
-              ✎
-            </button>
+    <div className="min-h-screen bg-slate-50">
+      {/* Page header — getFit style: solid band, title left, action right */}
+      <header className="bg-violet-700 px-6 py-5 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold tracking-tight text-white leading-tight truncate">{group.name}</h1>
+          {group.description && (
+            <p className="text-sm text-white/70 mt-0.5 truncate">{group.description}</p>
           )}
         </div>
+        {isAdmin && (
+          <button
+            onClick={() => setShowEditGroup(true)}
+            className="flex-shrink-0 bg-white/15 hover:bg-white/25 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors mt-0.5"
+          >
+            Edit
+          </button>
+        )}
       </header>
 
-      {/* Summary bar */}
-      {!expensesLoading && (
-        <div className="bg-violet-600 px-6 py-4">
-          <div className="max-w-3xl mx-auto flex items-center gap-6 flex-wrap">
-            <div>
-              <p className="text-xs text-violet-200 uppercase tracking-wide">Total spent</p>
-              <p className="text-lg font-bold text-white">${totalSpent.toFixed(2)}</p>
+      <main className="px-6 py-6 max-w-4xl">
+        {/* Back link */}
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-5"
+        >
+          ← Groups
+        </button>
+
+        {/* Summary stat cards */}
+        {!expensesLoading && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+            <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Total spent</p>
+              <p className="text-xl font-bold text-gray-900">${totalSpent.toFixed(2)}</p>
             </div>
-            <div>
-              <p className="text-xs text-violet-200 uppercase tracking-wide">Expenses</p>
-              <p className="text-lg font-bold text-white">{nonSettlements.length}</p>
+            <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Expenses</p>
+              <p className="text-xl font-bold text-gray-900">{nonSettlements.length}</p>
             </div>
             {balancesLoaded && yourNetBalance !== 0 && (
-              <div className="ml-auto">
-                <p className="text-xs text-violet-200 uppercase tracking-wide">Your balance</p>
-                <p className={`text-lg font-bold ${yourNetBalance > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {yourNetBalance > 0 ? `+$${yourNetBalance.toFixed(2)} owed to you` : `-$${Math.abs(yourNetBalance).toFixed(2)} you owe`}
+              <div className={`rounded-2xl border px-4 py-3 shadow-sm col-span-2 sm:col-span-1 ${yourNetBalance > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-1 text-gray-400">Your balance</p>
+                <p className={`text-xl font-bold ${yourNetBalance > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {yourNetBalance > 0 ? `+$${yourNetBalance.toFixed(2)}` : `-$${Math.abs(yourNetBalance).toFixed(2)}`}
+                </p>
+                <p className={`text-xs mt-0.5 ${yourNetBalance > 0 ? 'text-emerald-500' : 'text-rose-400'}`}>
+                  {yourNetBalance > 0 ? 'owed to you' : 'you owe'}
                 </p>
               </div>
             )}
             {balancesLoaded && yourNetBalance === 0 && nonSettlements.length > 0 && (
-              <div className="ml-auto">
-                <span className="text-xs font-medium text-emerald-400 border border-emerald-600 rounded-full px-2.5 py-1">
-                  All settled up ✓
-                </span>
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 shadow-sm col-span-2 sm:col-span-1 flex items-center gap-2">
+                <span className="text-emerald-600 text-lg">✓</span>
+                <p className="text-sm font-semibold text-emerald-700">All settled up</p>
               </div>
             )}
           </div>
+        )}
+
+        {/* Tabs */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="flex gap-1 -mb-px">
+            {(['expenses', 'balances', 'members', 'activity'] as Tab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2.5 text-sm font-semibold border-b-2 capitalize transition-colors ${
+                  activeTab === tab
+                    ? 'border-violet-600 text-violet-700'
+                    : 'border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
         </div>
-      )}
-
-      {/* Tabs */}
-      <div className="bg-violet-500 px-6">
-        <nav className="flex gap-6 max-w-3xl mx-auto">
-          {(['expenses', 'balances', 'members', 'activity'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`py-3 text-sm font-medium border-b-2 capitalize transition-colors ${
-                activeTab === tab
-                  ? 'border-amber-400 text-white'
-                  : 'border-transparent text-violet-200 hover:text-slate-200'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <main className="max-w-3xl mx-auto px-6 py-8">
         {activeTab === 'expenses' && (
           <div>
             <div className="flex justify-end mb-4">
