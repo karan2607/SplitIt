@@ -109,8 +109,16 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
   }
 
   function updateAmountSplit(userId: string, value: string) {
+    const entered = parseFloat(value) || 0
+    const others = amountSplits.filter((s) => s.user_id !== userId)
+    const remaining = amount > 0 ? Math.max(0, amount - entered) : 0
+    const perOther = amount > 0 && others.length > 0
+      ? (remaining / others.length).toFixed(2)
+      : ''
     setAmountSplits((prev) =>
-      prev.map((s) => (s.user_id === userId ? { ...s, amount: value } : s))
+      prev.map((s) =>
+        s.user_id === userId ? { ...s, amount: value } : { ...s, amount: perOther }
+      )
     )
   }
 
@@ -158,7 +166,7 @@ export default function AddExpenseForm({ group, onClose, onCreated, initialExpen
           .filter((s) => parseFloat(s.amount || '0') > 0)
           .map((s) => ({
             user_id: s.user_id,
-            percentage: ((parseFloat(s.amount) / totalAmt) * 100).toFixed(4),
+            percentage: ((parseFloat(s.amount) / totalAmt) * 100).toFixed(2),
           }))
         payload = {
           description: data.description,
